@@ -89,12 +89,6 @@ public class ServerStatsActivity extends AppCompatActivity {
         // TODO: 2016-05-15
     }
 
-    private void addDrawerItems() {
-        /*String[] osArray = { "Android", "iOS", "Windows", "OS X", "Linux" };
-        mAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, osArray);
-        mDrawerList.setAdapter(mAdapter);*/
-    }
-
     private void initUsersListView() {
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
                 R.layout.simple_item_list_layout, R.id.label, userList);
@@ -119,12 +113,11 @@ public class ServerStatsActivity extends AppCompatActivity {
         // Pass the event to ActionBarDrawerToggle, if it returns
         // true, then it has handled the app icon touch event
         if (mDrawerToggle.onOptionsItemSelected(item)) {
+
             return true;
         }
         // Handle your other action bar items...
 
         return super.onOptionsItemSelected(item);
     }
-
-
 }
