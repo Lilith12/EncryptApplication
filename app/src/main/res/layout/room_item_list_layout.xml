@@ -4,22 +4,12 @@
     android:layout_width="wrap_content"
     android:layout_height="wrap_content" >
 
-    <ImageView
-        android:id="@+id/icon"
-        android:layout_width="30dp"
-        android:layout_height="30dp"
-        android:layout_marginLeft="4dp"
-        android:layout_marginRight="10dp"
-        android:layout_marginTop="4dp"
-        android:src="@drawable/user_image" >
-    </ImageView>
-
     <TextView
         android:id="@+id/label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@+id/label"
-        android:textSize="20sp" >
+        android:textSize="30sp" >
     </TextView>
 
 </LinearLayout>

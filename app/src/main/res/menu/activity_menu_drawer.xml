@@ -18,11 +18,16 @@
             <item
                 android:id="@+id/nav_write"
                 android:icon="@drawable/a"
-                android:title="Wyślij wiadomość" />
+                android:title="Użytkownicy" />
             <item
                 android:id="@+id/nav_open"
                 android:icon="@drawable/open_icon"
+                android:onClick="setUsersFragment"
                 android:title="Skrzynka" />
+            <item
+                android:id="@+id/nav_room"
+                android:icon="@drawable/plus2"
+                android:title="Nowy pokój" />
         </menu>
     </item>
 
