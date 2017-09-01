@@ -2,26 +2,22 @@ package com.example.aleksandra.encryptapplication;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Color;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.ContextThemeWrapper;
 import android.view.View;
-import android.content.Intent;
 import android.widget.Button;
 import android.widget.EditText;
-
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
 
 public class ChooseLoginActivity extends AppCompatActivity implements View.OnClickListener {
     EditText nicknameField;
-    public static String nickname="";
+    public static String username="";
     final public static String setNickname = "set username";
     String jsonArrayObject;
 
@@ -32,7 +28,7 @@ public class ChooseLoginActivity extends AppCompatActivity implements View.OnCli
         nicknameField.setError(null);
 
         // Store values at the time of the login attempt.
-        String username = nicknameField.getText().toString().trim();
+        username = nicknameField.getText().toString().trim();
 
         // Check for a valid username.
         if (TextUtils.isEmpty(username)) {
@@ -51,7 +47,7 @@ public class ChooseLoginActivity extends AppCompatActivity implements View.OnCli
         @Override
         public void call(Object... args) {
             EncryptAppSocket app = (EncryptAppSocket) getApplication();
-            app.setUsername(nickname);
+            app.setUsername(username);
             Intent intent = new Intent(ChooseLoginActivity.this, ServerStatsActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(intent);

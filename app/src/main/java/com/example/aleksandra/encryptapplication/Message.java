@@ -2,11 +2,13 @@ package com.example.aleksandra.encryptapplication;
 
 import android.graphics.Bitmap;
 
+import java.io.Serializable;
+
 /**
  * Created by Aleksandra on 2016-11-19.
  */
 
-public class Message {
+public class Message implements Serializable {
 
     public static final int TYPE_MESSAGE = 0;
     public static final int TYPE_LOG = 1;

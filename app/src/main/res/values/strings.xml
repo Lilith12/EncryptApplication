@@ -17,4 +17,7 @@
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="user_action_typing">pisze...</string>
+    <string name="message_notification">Nowa wiadomość od %s</string>
+    <string name="foreground_notification_title">EncryptApp działa teraz w tle</string>
+    <string name="foreground_notification_content">Kliknij aby zmaksymalizować</string>
 </resources>

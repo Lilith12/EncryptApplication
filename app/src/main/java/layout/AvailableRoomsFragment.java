@@ -22,7 +22,6 @@ import android.widget.BaseAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
 
-import com.example.aleksandra.encryptapplication.ChooseLoginActivity;
 import com.example.aleksandra.encryptapplication.EncryptAppSocket;
 import com.example.aleksandra.encryptapplication.R;
 
@@ -38,12 +37,12 @@ import io.socket.emitter.Emitter;
 /**
  * A simple {@link Fragment} subclass.
  * Activities that contain this fragment must implement the
- * {@link AvailableRooms.OnFragmentInteractionListener} interface
+ * {@link AvailableRoomsFragment.OnFragmentInteractionListener} interface
  * to handle interaction events.
- * Use the {@link AvailableRooms#newInstance} factory method to
+ * Use the {@link AvailableRoomsFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class AvailableRooms extends Fragment {
+public class AvailableRoomsFragment extends Fragment {
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
@@ -60,7 +59,7 @@ public class AvailableRooms extends Fragment {
     private ArrayList<String> roomsList = new ArrayList<String>();
     private String jsonObject;
 
-    public AvailableRooms() {
+    public AvailableRoomsFragment() {
         // Required empty public constructor
     }
 
@@ -70,11 +69,11 @@ public class AvailableRooms extends Fragment {
      *
      * @param param1 Parameter 1.
      * @param param2 Parameter 2.
-     * @return A new instance of fragment AvailableRooms.
+     * @return A new instance of fragment AvailableRoomsFragment.
      */
     // TODO: Rename and change types and number of parameters
-    public static AvailableRooms newInstance(String param1, String param2) {
-        AvailableRooms fragment = new AvailableRooms();
+    public static AvailableRoomsFragment newInstance(String param1, String param2) {
+        AvailableRoomsFragment fragment = new AvailableRoomsFragment();
         Bundle args = new Bundle();
         args.putString(ARG_PARAM1, param1);
         args.putString(ARG_PARAM2, param2);

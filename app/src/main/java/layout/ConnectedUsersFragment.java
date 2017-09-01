@@ -174,7 +174,7 @@ public class ConnectedUsersFragment extends Fragment {
                 Bundle bundle = new Bundle();
                 bundle.putString("username", value);
 
-                WriteMessage pwMessage = new WriteMessage();
+                WritePrivateMessageFragment pwMessage = new WritePrivateMessageFragment();
                 pwMessage.setArguments(bundle);
                 android.support.v4.app.FragmentTransaction fragmentTransaction = getActivity().getSupportFragmentManager().beginTransaction();
                 fragmentTransaction.replace(R.id.fragment_container, pwMessage);

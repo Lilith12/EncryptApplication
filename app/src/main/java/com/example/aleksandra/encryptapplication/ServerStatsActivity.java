@@ -1,7 +1,8 @@
 package com.example.aleksandra.encryptapplication;
 
-import android.net.Uri;
+import android.content.Intent;
 import android.content.res.Configuration;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.Fragment;
@@ -11,21 +12,23 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
 
-import layout.AvailableRooms;
+import layout.AvailableRoomsFragment;
 import layout.ConnectedUsersFragment;
 import layout.GroupChatFragment;
-import layout.WriteMessage;
+import layout.WritePrivateMessageFragment;
 
 public class ServerStatsActivity extends AppCompatActivity implements ConnectedUsersFragment.OnFragmentInteractionListener,
-        WriteMessage.OnFragmentInteractionListener, AvailableRooms.OnFragmentInteractionListener, GroupChatFragment.OnFragmentInteractionListener {
+        WritePrivateMessageFragment.OnFragmentInteractionListener, AvailableRoomsFragment.OnFragmentInteractionListener, GroupChatFragment.OnFragmentInteractionListener {
     private DrawerLayout mDrawerLayout;
     private ActionBarDrawerToggle mDrawerToggle;
     private NavigationView nvDrawer;
     android.support.v4.app.FragmentManager fragmentManager;
+    private Intent serviceIntent;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        fragmentManager = getSupportFragmentManager();
         setContentView(R.layout.activity_server_stats);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -40,37 +43,22 @@ public class ServerStatsActivity extends AppCompatActivity implements ConnectedU
         // Tie DrawerLayout events to the ActionBarToggle
         mDrawerLayout.addDrawerListener(mDrawerToggle);
 
-//        mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
-//        mDrawerToggle = new ActionBarDrawerToggle(
-//                this,                  /* host Activity */
-//                mDrawerLayout,         /* DrawerLayout object */
-//                toolbar,
-//                //R.drawable.side_nav_bar,  /* nav drawer icon to replace 'Up' caret */
-//                R.string.drawer_open,  /* "open drawer" description */
-//                R.string.drawer_close  /* "close drawer" description */
-//        ) {
-//
-//            /** Called when a drawer has settled in a completely closed state. */
-//            public void onDrawerClosed(View view) {
-//                super.onDrawerClosed(view);
-//                //getActionBar().setTitle("l");
-//            }
-//
-//            /** Called when a drawer has settled in a completely open state. */
-//            public void onDrawerOpened(View drawerView) {
-//                super.onDrawerOpened(drawerView);
-//                //getActionBar().setTitle("iio");
-//            }
-//        };
+        String fragmentName = getIntent().getStringExtra("fragment");
 
-        // Set the drawer toggle as the DrawerListener
-        // Set the adapter for the list view
-//
-//        mDrawerLayout.addDrawerListener(mDrawerToggle);
-//        mDrawerToggle.syncState();
+        if(fragmentName != null && fragmentName.equals("WritePrivateMessageFragment")){
+            fragmentManager.beginTransaction()
+                    .replace(R.id.fragment_container, new WritePrivateMessageFragment(), "privateMessageFragment")
+                    .addToBackStack(null)
+                    .commit();
+        }
+        else if(fragmentName != null && fragmentName.equals("GroupChatFragment")){
+            fragmentManager.beginTransaction()
+                    .replace(R.id.fragment_container, new GroupChatFragment(), "groupChatFragment")
+                    .addToBackStack(null)
+                    .commit();
+        }
 
-
-        if (findViewById(R.id.fragment_container) != null) {
+        if (findViewById(R.id.fragment_container) != null && fragmentName == null) {
 
             // However, if we're being restored from a previous state,
             // then we don't need to do anything and should return or else
@@ -80,12 +68,19 @@ public class ServerStatsActivity extends AppCompatActivity implements ConnectedU
             }
 
             ConnectedUsersFragment usersFragment = new ConnectedUsersFragment();
-            fragmentManager = getSupportFragmentManager();
             android.support.v4.app.FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
             fragmentTransaction.replace(R.id.fragment_container, usersFragment);
             fragmentTransaction.addToBackStack(null);
             fragmentTransaction.commit();
         }
+        serviceIntent = new Intent(this, NotificationService.class);
+        this.startService(serviceIntent);
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        this.stopService(serviceIntent);
     }
 
     private ActionBarDrawerToggle setupDrawerToggle(Toolbar toolbar) {
@@ -144,7 +139,7 @@ public class ServerStatsActivity extends AppCompatActivity implements ConnectedU
                 fragmentClass = ConnectedUsersFragment.class;
                 break;
             case R.id.nav_room:
-                fragmentClass = AvailableRooms.class;
+                fragmentClass = AvailableRoomsFragment.class;
                 break;
             default:
                 fragmentClass = ConnectedUsersFragment.class;

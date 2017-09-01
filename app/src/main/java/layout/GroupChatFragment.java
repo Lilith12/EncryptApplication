@@ -2,11 +2,8 @@ package layout;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
@@ -17,8 +14,6 @@ import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
-import android.util.Base64;
-import android.util.Log;
 import android.view.ContextThemeWrapper;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -41,17 +36,11 @@ import com.example.aleksandra.encryptapplication.R;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
-
-import static android.opengl.ETC1.encodeImage;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -138,7 +127,7 @@ public class GroupChatFragment extends Fragment {
                     public void onClick(DialogInterface dialog, int which) {
                         mSocket.emit("disconnect from room", roomName);
                         mSocket.emit("user disconnected");
-                        AvailableRooms rooms = new AvailableRooms();
+                        AvailableRoomsFragment rooms = new AvailableRoomsFragment();
                         android.support.v4.app.FragmentTransaction fragmentTransaction = getActivity().getSupportFragmentManager().beginTransaction();
                         fragmentTransaction.replace(R.id.fragment_container, rooms);
                         fragmentTransaction.addToBackStack(null);
@@ -207,9 +196,15 @@ public class GroupChatFragment extends Fragment {
     }
 
     @Override
+    public void onDestroyView(){
+        super.onDestroyView();
+        mListener = null;
+        removeHandlers();
+    }
+
+    @Override
     public void onDetach() {
         super.onDetach();
-        mListener = null;
     }
 
     /**
@@ -288,8 +283,7 @@ public class GroupChatFragment extends Fragment {
         sendMessageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String message = messageField.getText().toString();
-                mSocket.emit("new group message", roomName, message);
+                attemptSend();
             }
         });
     }
@@ -306,80 +300,6 @@ public class GroupChatFragment extends Fragment {
         adapter.notifyItemInserted(messageList.size() - 1);
         scrollToBottom();
     }
-//    public void sendImage(String path)
-//    {
-//        JSONObject sendData = new JSONObject();
-//        try{
-//            sendData.put("image", encodeImage(path));
-//            Bitmap bmp = decodeImage(sendData.getString("image"));
-//            addImage(bmp);
-//            mSocket.emit("new group message",sendData);
-//        }catch(JSONException e){
-//
-//        }
-//    }
-//
-//    private void addImage(Bitmap bmp){
-//        messageList.add(new Message.Builder(Message.TYPE_MESSAGE)
-//                .image(bmp).build());
-//        adapter = new MessageAdapter(messageList);
-//        adapter.notifyItemInserted(0);
-//        scrollToBottom();
-//    }
-//
-//    private String encodeImage(String path)
-//    {
-//        File imagefile = new File(path);
-//        FileInputStream fis = null;
-//        try{
-//            fis = new FileInputStream(imagefile);
-//        }catch(FileNotFoundException e){
-//            e.printStackTrace();
-//        }
-//        Bitmap bm = BitmapFactory.decodeStream(fis);
-//        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-//        bm.compress(Bitmap.CompressFormat.JPEG,100,baos);
-//        byte[] b = baos.toByteArray();
-//        String encImage = Base64.encodeToString(b, Base64.DEFAULT);
-//        //Base64.de
-//        return encImage;
-//
-//    }
-//
-//    private Bitmap decodeImage(String data)
-//    {
-//        byte[] b = Base64.decode(data,Base64.DEFAULT);
-//        Bitmap bmp = BitmapFactory.decodeByteArray(b,0,b.length);
-//        return bmp;
-//    }
-//
-//    private Emitter.Listener handleIncomingMessages = new Emitter.Listener(){
-//        @Override
-//        public void call(final Object... args){
-//            getActivity().runOnUiThread(new Runnable() {
-//                @Override
-//                public void run() {
-//                    JSONObject data = (JSONObject) args[0];
-//                    String message;
-//                    String imageText;
-//                    try {
-//                        message = data.getString("text").toString();
-//                        addMessage(message);
-//
-//                    } catch (JSONException e) {
-//                        // return;
-//                    }
-//                    try {
-//                        imageText = data.getString("image");
-//                        addImage(decodeImage(imageText));
-//                    } catch (JSONException e) {
-//                        //retur
-//                    }
-//
-//                }
-//            });
-//        }
-//    };
 
     private void addTyping(String username) {
         messageList.add(new Message.Builder(Message.TYPE_ACTION)
@@ -532,4 +452,12 @@ public class GroupChatFragment extends Fragment {
             mSocket.emit("stop typing to group", roomName);
         }
     };
+
+    private void removeHandlers(){
+//        mSocket.off("groupMessage");
+        mSocket.off("groupTyping");
+        mSocket.off("stopGroupTyping");
+        mSocket.off("user connected");
+        mSocket.off("user disconnected");
+    }
 }

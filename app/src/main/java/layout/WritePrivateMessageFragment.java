@@ -42,12 +42,12 @@ import io.socket.emitter.Emitter;
 /**
  * A simple {@link Fragment} subclass.
  * Activities that contain this fragment must implement the
- * {@link WriteMessage.OnFragmentInteractionListener} interface
+ * {@link WritePrivateMessageFragment.OnFragmentInteractionListener} interface
  * to handle interaction events.
- * Use the {@link WriteMessage#newInstance} factory method to
+ * Use the {@link WritePrivateMessageFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class WriteMessage extends Fragment {
+public class WritePrivateMessageFragment extends Fragment {
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
@@ -70,7 +70,7 @@ public class WriteMessage extends Fragment {
 
     private OnFragmentInteractionListener mListener;
 
-    public WriteMessage() {
+    public WritePrivateMessageFragment() {
         // Required empty public constructor
     }
 
@@ -80,11 +80,11 @@ public class WriteMessage extends Fragment {
      *
      * @param param1 Parameter 1.
      * @param param2 Parameter 2.
-     * @return A new instance of fragment WriteMessage.
+     * @return A new instance of fragment WritePrivateMessageFragment.
      */
     // TODO: Rename and change types and number of parameters
-    public static WriteMessage newInstance(String param1, String param2) {
-        WriteMessage fragment = new WriteMessage();
+    public static WritePrivateMessageFragment newInstance(String param1, String param2) {
+        WritePrivateMessageFragment fragment = new WritePrivateMessageFragment();
         Bundle args = new Bundle();
         args.putString(ARG_PARAM1, param1);
         args.putString(ARG_PARAM2, param2);
@@ -154,6 +154,13 @@ public class WriteMessage extends Fragment {
             throw new RuntimeException(context.toString()
                     + " must implement OnFragmentInteractionListener");
         }
+    }
+
+    @Override
+    public void onDestroyView(){
+        super.onDestroyView();
+        mListener = null;
+        removeHandlers();
     }
 
     @Override
@@ -236,8 +243,7 @@ public class WriteMessage extends Fragment {
         sendMessageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String message = messageField.getText().toString();
-                mSocket.emit("new message", toUser, message);
+                attemptSend();
             }
         });
     }
@@ -365,4 +371,10 @@ public class WriteMessage extends Fragment {
             mSocket.emit("stop typing PW", toUser);
         }
     };
+
+    private void removeHandlers(){
+//        mSocket.off("pwMessage");
+        mSocket.off("typing");
+        mSocket.off("stop typing");
+    }
 }
