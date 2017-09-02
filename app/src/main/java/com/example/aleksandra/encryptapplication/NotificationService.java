@@ -34,8 +34,8 @@ public class NotificationService extends Service {
 
     @Override
     public void onDestroy() {
-        mSocket.off("pwMessage");
-        mSocket.off("groupMessage");
+        mSocket.off("pwMessageGlobal");
+        mSocket.off("groupMessageGlobal");
         EncryptAppSocket app = (EncryptAppSocket) this.getApplication();
         mSocket.emit("disconnect user", app.getUsername());
         mSocket.disconnect();
@@ -67,8 +67,8 @@ public class NotificationService extends Service {
     private void addGlobalHandlers() {
         EncryptAppSocket app = (EncryptAppSocket) this.getApplication();
         mSocket = app.getSocket();
-        mSocket.on("pwMessage", handlePrivateMessage);
-        mSocket.on("groupMessage", handleGroupMessage);
+        mSocket.on("pwMessageGlobal", handlePrivateMessage);
+        mSocket.on("groupMessageGlobal", handleGroupMessage);
     }
 
     private Emitter.Listener handlePrivateMessage = new Emitter.Listener() {
@@ -83,7 +83,8 @@ public class NotificationService extends Service {
                     try {
                         username = data.getString("username");
                         message = data.getString("message");
-                        createNotification(username, message, "WritePrivateMessageFragment");
+                        FileUtils.saveMessageToTempFile(FileUtils.createEmptyTempFile(getApplicationContext(), username), username, message);
+                        createNotification(username, message, "WritePrivateMessageFragment", username);
                     } catch (JSONException e) {
                         return;
                     }
@@ -102,11 +103,14 @@ public class NotificationService extends Service {
                 public void run() {
                     JSONObject data = (JSONObject) args[0];
                     String roomName;
+                    String username;
                     String message;
                     try {
                         roomName = data.getString("roomName");
+                        username = data.getString("username");
                         message = data.getString("message");
-                        createNotification(roomName, message, "GroupChatFragment");
+                        FileUtils.saveMessageToTempFile(FileUtils.createEmptyTempFile(getApplicationContext(), roomName), username, message);
+                        createNotification(roomName, message, "GroupChatFragment", roomName);
                     } catch (JSONException e) {
                         return;
                     }
@@ -116,10 +120,11 @@ public class NotificationService extends Service {
         }
     };
 
-    private void createNotification(String username, String message, String fragment) {
+    private void createNotification(String username, String message, String fragment, String chatView) {
         Context ctx = NotificationService.this;
         Intent notificationIntent = new Intent(ctx, ServerStatsActivity.class);
         notificationIntent.putExtra("fragment", fragment);
+        notificationIntent.putExtra("chatView", chatView);
         PendingIntent contentIntent = PendingIntent.getActivity(ctx,
                 0, notificationIntent,
                 PendingIntent.FLAG_CANCEL_CURRENT);

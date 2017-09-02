@@ -11,6 +11,7 @@ import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.util.Base64;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -25,6 +26,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import com.example.aleksandra.encryptapplication.EncryptAppSocket;
+import com.example.aleksandra.encryptapplication.FileUtils;
 import com.example.aleksandra.encryptapplication.Message;
 import com.example.aleksandra.encryptapplication.MessageAdapter;
 import com.example.aleksandra.encryptapplication.R;
@@ -32,21 +34,17 @@ import com.example.aleksandra.encryptapplication.R;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
 
-
-/**
- * A simple {@link Fragment} subclass.
- * Activities that contain this fragment must implement the
- * {@link WritePrivateMessageFragment.OnFragmentInteractionListener} interface
- * to handle interaction events.
- * Use the {@link WritePrivateMessageFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
 public class WritePrivateMessageFragment extends Fragment {
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -74,14 +72,6 @@ public class WritePrivateMessageFragment extends Fragment {
         // Required empty public constructor
     }
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment WritePrivateMessageFragment.
-     */
     // TODO: Rename and change types and number of parameters
     public static WritePrivateMessageFragment newInstance(String param1, String param2) {
         WritePrivateMessageFragment fragment = new WritePrivateMessageFragment();
@@ -103,6 +93,19 @@ public class WritePrivateMessageFragment extends Fragment {
         Bundle bundle = this.getArguments();
         if (bundle != null) {
             toUser = bundle.getString("username");
+        }
+    }
+
+    private void readFromFile(File file){
+        String username;
+        try {
+            FileReader fileReader = new FileReader(file);
+            BufferedReader bufferedReader = new BufferedReader(fileReader);
+            while((username = bufferedReader.readLine()) != null){
+                addMessage(username, bufferedReader.readLine());
+            }
+        }catch(IOException e){
+            e.printStackTrace();
         }
     }
 
@@ -135,6 +138,16 @@ public class WritePrivateMessageFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_write_message, container, false);
+    }
+
+    private String encodeFileName(String username) {
+        try {
+            byte[] data = username.getBytes("UTF-8");
+            return Base64.encodeToString(data, Base64.DEFAULT);
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     // TODO: Rename method, update argument and hook method into UI event
@@ -201,6 +214,18 @@ public class WritePrivateMessageFragment extends Fragment {
         messageView.setLayoutManager(new LinearLayoutManager(getActivity()));
         messageView.setAdapter(adapter);
 
+        setMessageFieldListeners(sendMessageButton);
+        loadPreviousMessages();
+    }
+
+    private void loadPreviousMessages() {
+        File outputTempFile = new File(getContext().getCacheDir().getPath() + "/" + encodeFileName(toUser));
+        if(outputTempFile.isFile()){
+            readFromFile(outputTempFile);
+        }
+    }
+
+    private void setMessageFieldListeners(Button sendMessageButton) {
         messageField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int id, KeyEvent event) {
@@ -237,8 +262,6 @@ public class WritePrivateMessageFragment extends Fragment {
 
             }
         });
-
-
 
         sendMessageButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -290,11 +313,16 @@ public class WritePrivateMessageFragment extends Fragment {
             return;
         }
 
+        FileUtils.saveMessageToTempFile(FileUtils.createEmptyTempFile(getContext(), toUser), fromUser, message);
         messageField.setText("");
         addMessage(fromUser, message);
 
         // perform the sending message attempt.
         mSocket.emit("new message", toUser, message);
+    }
+
+    private boolean checkIfActiveConversationWindow(String messageFromUser){
+        return messageFromUser.equals(toUser);
     }
 
     private void scrollToBottom() {
@@ -318,7 +346,9 @@ public class WritePrivateMessageFragment extends Fragment {
                     }
 
                     removeTyping(username);
-                    addMessage(username, message);
+                    if (checkIfActiveConversationWindow(username)) {
+                        addMessage(username, message);
+                    }
                 }
             });
         }
@@ -373,7 +403,7 @@ public class WritePrivateMessageFragment extends Fragment {
     };
 
     private void removeHandlers(){
-//        mSocket.off("pwMessage");
+        mSocket.off("pwMessage");
         mSocket.off("typing");
         mSocket.off("stop typing");
     }

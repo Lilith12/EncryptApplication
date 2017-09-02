@@ -46,16 +46,10 @@ public class ServerStatsActivity extends AppCompatActivity implements ConnectedU
         String fragmentName = getIntent().getStringExtra("fragment");
 
         if(fragmentName != null && fragmentName.equals("WritePrivateMessageFragment")){
-            fragmentManager.beginTransaction()
-                    .replace(R.id.fragment_container, new WritePrivateMessageFragment(), "privateMessageFragment")
-                    .addToBackStack(null)
-                    .commit();
+            replacePrivateMessageFragment();
         }
         else if(fragmentName != null && fragmentName.equals("GroupChatFragment")){
-            fragmentManager.beginTransaction()
-                    .replace(R.id.fragment_container, new GroupChatFragment(), "groupChatFragment")
-                    .addToBackStack(null)
-                    .commit();
+            replaceGroupMessageFragment();
         }
 
         if (findViewById(R.id.fragment_container) != null && fragmentName == null) {
@@ -75,6 +69,28 @@ public class ServerStatsActivity extends AppCompatActivity implements ConnectedU
         }
         serviceIntent = new Intent(this, NotificationService.class);
         this.startService(serviceIntent);
+    }
+
+    private void replaceGroupMessageFragment() {
+        Bundle bundle = new Bundle();
+        bundle.putString("roomName", getIntent().getStringExtra("chatView"));
+        GroupChatFragment fragment = new GroupChatFragment();
+        fragment.setArguments(bundle);
+        fragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, fragment, "groupChatFragment")
+                .addToBackStack(null)
+                .commit();
+    }
+
+    private void replacePrivateMessageFragment() {
+        Bundle bundle = new Bundle();
+        bundle.putString("username", getIntent().getStringExtra("chatView"));
+        WritePrivateMessageFragment fragment = new WritePrivateMessageFragment();
+        fragment.setArguments(bundle);
+        fragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, fragment, "privateMessageFragment")
+                .addToBackStack(null)
+                .commit();
     }
 
     @Override

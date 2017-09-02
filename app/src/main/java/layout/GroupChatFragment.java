@@ -29,6 +29,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.aleksandra.encryptapplication.EncryptAppSocket;
+import com.example.aleksandra.encryptapplication.FileUtils;
 import com.example.aleksandra.encryptapplication.Message;
 import com.example.aleksandra.encryptapplication.MessageAdapter;
 import com.example.aleksandra.encryptapplication.R;
@@ -36,6 +37,10 @@ import com.example.aleksandra.encryptapplication.R;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -241,6 +246,17 @@ public class GroupChatFragment extends Fragment {
         messageView.setLayoutManager(new LinearLayoutManager(getActivity()));
         messageView.setAdapter(adapter);
 
+        setMessageFieldListeners();
+        loadPreviousMessages();
+        sendMessageButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                attemptSend();
+            }
+        });
+    }
+
+    private void setMessageFieldListeners() {
         messageField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int id, KeyEvent event) {
@@ -275,15 +291,6 @@ public class GroupChatFragment extends Fragment {
             @Override
             public void afterTextChanged(Editable s) {
 
-            }
-        });
-
-
-
-        sendMessageButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                attemptSend();
             }
         });
     }
@@ -330,6 +337,7 @@ public class GroupChatFragment extends Fragment {
             return;
         }
 
+        FileUtils.saveMessageToTempFile(FileUtils.createEmptyTempFile(getContext(), roomName), fromUser, message);
         messageField.setText("");
         addMessage(fromUser, message);
 
@@ -453,8 +461,28 @@ public class GroupChatFragment extends Fragment {
         }
     };
 
+    private void readFromFile(File file){
+        String username;
+        try {
+            FileReader fileReader = new FileReader(file);
+            BufferedReader bufferedReader = new BufferedReader(fileReader);
+            while((username = bufferedReader.readLine()) != null){
+                addMessage(username, bufferedReader.readLine());
+            }
+        }catch(IOException e){
+            e.printStackTrace();
+        }
+    }
+
+    private void loadPreviousMessages() {
+        File outputTempFile = new File(getContext().getCacheDir().getPath() + "/" + FileUtils.encodeFileName(roomName));
+        if(outputTempFile.isFile()){
+            readFromFile(outputTempFile);
+        }
+    }
+
     private void removeHandlers(){
-//        mSocket.off("groupMessage");
+        mSocket.off("groupMessage");
         mSocket.off("groupTyping");
         mSocket.off("stopGroupTyping");
         mSocket.off("user connected");
