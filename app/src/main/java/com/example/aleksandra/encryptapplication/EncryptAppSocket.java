@@ -12,20 +12,22 @@ import io.socket.client.Socket;
  */
 public class EncryptAppSocket extends Application {
 
-    final private String hostname = "http://ec2-35-163-196-156.us-west-2.compute.amazonaws.com:8085";
-    final private String localhostHostname = "http://192.168.0.100:8085";
+    private final String hostname = "http://ec2-18-130-182-33.eu-west-2.compute.amazonaws.com:8085";
+    private final String localhostHostname = "http://192.168.1.11:8085"; //netstat -r 0.0.0.0
 
     private String username;
     private Socket mSocket;
-    {
-        try {
-            mSocket = IO.socket(localhostHostname);
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
-    }
+
+    public EncryptAppSocket(){ }
 
     public Socket getSocket() {
+        if (mSocket == null) {
+            try {
+                mSocket = IO.socket(hostname);
+            } catch (URISyntaxException e) {
+                throw new RuntimeException(e);
+            }
+        }
         return mSocket;
     }
 
@@ -33,7 +35,7 @@ public class EncryptAppSocket extends Application {
         return username;
     }
 
-    public void setUsername(String username ) {
+    public void setUsername(String username) {
         this.username = username;
     }
 }

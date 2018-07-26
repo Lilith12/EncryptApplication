@@ -12,10 +12,10 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
 
-import layout.AvailableRoomsFragment;
-import layout.ConnectedUsersFragment;
-import layout.GroupChatFragment;
-import layout.WritePrivateMessageFragment;
+import com.example.aleksandra.encryptapplication.fragments.AvailableRoomsFragment;
+import com.example.aleksandra.encryptapplication.fragments.ConnectedUsersFragment;
+import com.example.aleksandra.encryptapplication.fragments.GroupChatFragment;
+import com.example.aleksandra.encryptapplication.fragments.WritePrivateMessageFragment;
 
 public class ServerStatsActivity extends AppCompatActivity implements ConnectedUsersFragment.OnFragmentInteractionListener,
         WritePrivateMessageFragment.OnFragmentInteractionListener, AvailableRoomsFragment.OnFragmentInteractionListener, GroupChatFragment.OnFragmentInteractionListener {
@@ -30,11 +30,11 @@ public class ServerStatsActivity extends AppCompatActivity implements ConnectedU
         super.onCreate(savedInstanceState);
         fragmentManager = getSupportFragmentManager();
         setContentView(R.layout.activity_server_stats);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
-        nvDrawer = (NavigationView) findViewById(R.id.nav_view);
+        mDrawerLayout = findViewById(R.id.drawer_layout);
+        nvDrawer = findViewById(R.id.nav_view);
         // Setup drawer view
         setupDrawerContent(nvDrawer);
 
@@ -93,6 +93,7 @@ public class ServerStatsActivity extends AppCompatActivity implements ConnectedU
                 .commit();
     }
 
+
     @Override
     public void onDestroy() {
         super.onDestroy();
@@ -102,7 +103,7 @@ public class ServerStatsActivity extends AppCompatActivity implements ConnectedU
     private ActionBarDrawerToggle setupDrawerToggle(Toolbar toolbar) {
         // NOTE: Make sure you pass in a valid toolbar reference.  ActionBarDrawToggle() does not require it
         // and will not render the hamburger icon without it.
-        return new ActionBarDrawerToggle(this, mDrawerLayout, toolbar, R.string.drawer_open,  R.string.drawer_close);
+        return new ActionBarDrawerToggle(this, mDrawerLayout, toolbar, 0, R.string.drawer_open);
     }
 
     @Override
@@ -121,17 +122,10 @@ public class ServerStatsActivity extends AppCompatActivity implements ConnectedU
 
     private void setupDrawerContent(NavigationView navigationView) {
         navigationView.setNavigationItemSelectedListener(
-                new NavigationView.OnNavigationItemSelectedListener() {
-                    @Override
-                    public boolean onNavigationItemSelected(MenuItem menuItem) {
-                        selectDrawerItem(menuItem);
-                        return true;
-                    }
+                menuItem -> {
+                    selectDrawerItem(menuItem);
+                    return true;
                 });
-    }
-
-    private void initResources() {
-        // TODO: 2016-05-15
     }
 
     @Override

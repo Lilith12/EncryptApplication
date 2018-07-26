@@ -1,10 +1,11 @@
-package layout;
+package com.example.aleksandra.encryptapplication.fragments;
 
 import android.app.Activity;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -26,21 +27,21 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import com.example.aleksandra.encryptapplication.EncryptAppSocket;
-import com.example.aleksandra.encryptapplication.FileUtils;
-import com.example.aleksandra.encryptapplication.Message;
-import com.example.aleksandra.encryptapplication.MessageAdapter;
 import com.example.aleksandra.encryptapplication.R;
+import com.example.aleksandra.encryptapplication.ItemClickSupport;
+import com.example.aleksandra.encryptapplication.handlers.DatabaseHandler;
+import com.example.aleksandra.encryptapplication.handlers.TableMessagesUtils;
+import com.example.aleksandra.encryptapplication.model.message.view.Message;
+import com.example.aleksandra.encryptapplication.model.message.view.MessageAdapter;
+import com.example.aleksandra.encryptapplication.model.message.websocket.PrivateMessageModel;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
@@ -50,17 +51,20 @@ public class WritePrivateMessageFragment extends Fragment {
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
     private static final String ARG_PARAM2 = "param2";
+    public static final String USERNAME = "username";
     private final String socketPwMessage = "pwMessage";
     private RecyclerView messageView;
-    private List<Message> messageList = new ArrayList<Message>();
+    private List<Message> messageList = new ArrayList<>();
     private RecyclerView.Adapter adapter;
     private static final int TYPING_TIMER_LENGTH = 600;
     private boolean isTyping = false;
     private Handler typingHandler = new Handler();
-    String toUser;
-    String fromUser;
-    EditText messageField;
-    Socket mSocket;
+    private String toUser;
+    private String fromUser;
+    private EditText messageField;
+    private Socket mSocket;
+    private DatabaseHandler db;
+    private boolean isInBackground;
 
     // TODO: Rename and change types of parameters
     private String mParam1;
@@ -92,21 +96,9 @@ public class WritePrivateMessageFragment extends Fragment {
         setHasOptionsMenu(true);
         Bundle bundle = this.getArguments();
         if (bundle != null) {
-            toUser = bundle.getString("username");
+            toUser = bundle.getString(USERNAME);
         }
-    }
-
-    private void readFromFile(File file){
-        String username;
-        try {
-            FileReader fileReader = new FileReader(file);
-            BufferedReader bufferedReader = new BufferedReader(fileReader);
-            while((username = bufferedReader.readLine()) != null){
-                addMessage(username, bufferedReader.readLine());
-            }
-        }catch(IOException e){
-            e.printStackTrace();
-        }
+        db = DatabaseHandler.getDatabaseHandler(getContext());
     }
 
     @Override
@@ -116,6 +108,20 @@ public class WritePrivateMessageFragment extends Fragment {
         inflater.inflate(R.menu.action_bar_disconnect, menu);
         inflater.inflate(R.menu.action_bar_add_image, menu);
 
+    }
+
+    @Override
+    public void onStart(){
+        super.onStart();
+        isInBackground = false;
+    }
+
+    @Override
+    public void onStop(){
+        super.onStop();
+        if(!getActivity().isChangingConfigurations()){
+            isInBackground = true;
+        }
     }
 
     @Override
@@ -135,7 +141,7 @@ public class WritePrivateMessageFragment extends Fragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+            Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_write_message, container, false);
     }
@@ -170,7 +176,7 @@ public class WritePrivateMessageFragment extends Fragment {
     }
 
     @Override
-    public void onDestroyView(){
+    public void onDestroyView() {
         super.onDestroyView();
         mListener = null;
         removeHandlers();
@@ -200,9 +206,9 @@ public class WritePrivateMessageFragment extends Fragment {
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        messageField = (EditText) getActivity().findViewById(R.id.messageField);
+        messageField = getActivity().findViewById(R.id.messageField);
         messageField.setTextColor(Color.rgb(255, 255, 255));
-        Button sendMessageButton = (Button) getActivity().findViewById(R.id.sendButton);
+        Button sendMessageButton = getActivity().findViewById(R.id.sendButton);
 
         final EncryptAppSocket app = (EncryptAppSocket) getActivity().getApplication();
         mSocket = app.getSocket();
@@ -210,32 +216,64 @@ public class WritePrivateMessageFragment extends Fragment {
         mSocket.on("pwMessage", handlePrivateMessage);
         mSocket.on("typing", onTyping);
         mSocket.on("stop typing", onStopTyping);
-        messageView = (RecyclerView) getActivity().findViewById(R.id.messages);
+        messageView = getActivity().findViewById(R.id.messages);
         messageView.setLayoutManager(new LinearLayoutManager(getActivity()));
         messageView.setAdapter(adapter);
-
         setMessageFieldListeners(sendMessageButton);
-        loadPreviousMessages();
+        setTextFieldMessageListeners();
+        loadPreviousMessagesFromDb();
     }
 
-    private void loadPreviousMessages() {
-        File outputTempFile = new File(getContext().getCacheDir().getPath() + "/" + encodeFileName(toUser));
-        if(outputTempFile.isFile()){
-            readFromFile(outputTempFile);
+    private void loadPreviousMessagesFromDb() {
+        List<Message> messages = db.getMessagesFromConversation(toUser);
+        if (!messages.isEmpty()) {
+            for (Message message : messages) {
+                addMessage(message, false, null);
+            }
         }
     }
 
-    private void setMessageFieldListeners(Button sendMessageButton) {
-        messageField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+    private void setTextFieldMessageListeners() {
+        messageView.addOnItemTouchListener(new ItemClickSupport(getContext(),
+                messageView, new ItemClickSupport.RecyclerViewClickListener() {
+
             @Override
-            public boolean onEditorAction(TextView v, int id, KeyEvent event) {
-                if (id == R.id.send || id == EditorInfo.IME_NULL) {
-                    attemptSend();
-                    return true;
-                }
-                return false;
+            public void onItemClicked(int position, View v) {
+                Message selectedMessage = messageList.get(position);
+                db.deleteMessage(selectedMessage);
+                messageList.remove(position);
+                adapter.notifyItemRemoved(position);
             }
-        });
+
+            @Override
+            public void onItemLongClicked(int position, View v) {
+                Message message = messageList.get(position);
+                if (message.getUsername().equals(fromUser)) {
+                    final boolean edited = message.isEdited();
+                    final int positionOnList = position;
+                    message = setMessageEdited(position, message, !edited);
+                    messageField.setText(edited ? message.getMessage() : "");
+                    messageField.setOnEditorActionListener(
+                            getEnterListener(edited, positionOnList));
+                    Button sendMessageButton = getActivity().findViewById(R.id.sendButton);
+                    sendMessageButton.setOnClickListener(v1 -> attemptSend(edited, positionOnList));
+                }
+            }
+        }));
+    }
+
+
+    private Message setMessageEdited(int position, Message message, boolean isEdited) {
+        Message.Builder messageBuilder = new Message.Builder(Message.TYPE_MESSAGE);
+        Message messageEdited = messageBuilder.id(message.getId()).username(fromUser).message(
+                message.getMessage()).isEdited(isEdited).codeMessage(
+                message.getCodeMessage()).build();
+        messageList.set(position, messageEdited);
+        return message;
+    }
+
+    private void setMessageFieldListeners(Button sendMessageButton) {
+        messageField.setOnEditorActionListener(getEnterListener(false, null));
 
         messageField.addTextChangedListener(new TextWatcher() {
             @Override
@@ -263,12 +301,19 @@ public class WritePrivateMessageFragment extends Fragment {
             }
         });
 
-        sendMessageButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                attemptSend();
-            }
-        });
+        sendMessageButton.setOnClickListener(v -> attemptSend(false, null));
+    }
+
+    @NonNull
+    private TextView.OnEditorActionListener getEnterListener(final boolean wasEdited,
+            final Integer position) {
+        return (TextView v, int id, KeyEvent event) -> {
+                if (id == R.id.send || id == EditorInfo.IME_NULL) {
+                    attemptSend(wasEdited, position);
+                    return true;
+                }
+                return false;
+            };
     }
 
     private void addLog(String message) {
@@ -277,11 +322,16 @@ public class WritePrivateMessageFragment extends Fragment {
         adapter.notifyItemInserted(messageList.size() - 1);
         scrollToBottom();
     }
-    private void addMessage(String username, String message) {
-        messageList.add(new Message.Builder(Message.TYPE_MESSAGE)
-                .username(username).message(message).build());
-        adapter.notifyItemInserted(messageList.size() - 1);
-        scrollToBottom();
+
+    private void addMessage(Message message, boolean wasEdited, Integer position) {
+        if (wasEdited && position != null) {
+            messageList.set(position, message);
+            adapter.notifyItemChanged(position);
+        } else {
+            messageList.add(message);
+            adapter.notifyItemInserted(messageList.size() - 1);
+            scrollToBottom();
+        }
     }
 
     private void addTyping(String username) {
@@ -294,14 +344,15 @@ public class WritePrivateMessageFragment extends Fragment {
     private void removeTyping(String username) {
         for (int i = messageList.size() - 1; i >= 0; i--) {
             Message message = messageList.get(i);
-            if (message.getType() == Message.TYPE_ACTION && message.getUsername().equals(username)) {
+            if (message.getType() == Message.TYPE_ACTION && message.getUsername().equals(
+                    username)) {
                 messageList.remove(i);
                 adapter.notifyItemRemoved(i);
             }
         }
     }
 
-    private void attemptSend() {
+    private void attemptSend(boolean wasEdited, Integer position) {
         if (null == toUser) return;
         if (!mSocket.connected()) return;
 
@@ -313,96 +364,88 @@ public class WritePrivateMessageFragment extends Fragment {
             return;
         }
 
-        FileUtils.saveMessageToTempFile(FileUtils.createEmptyTempFile(getContext(), toUser), fromUser, message);
+//        FileUtils.saveMessageToTempFile(FileUtils.createEmptyTempFile(getContext(), toUser),
+// fromUser, message);
         messageField.setText("");
-        addMessage(fromUser, message);
+        Message.Builder messageBuilder = new Message.Builder(Message.TYPE_MESSAGE)
+                .username(fromUser).message(message);
+        String uniqueID;
+        long id = -1;
+        if (!wasEdited) {
+            uniqueID = UUID.randomUUID().toString();
+            messageBuilder.codeMessage(uniqueID);
+            id = db.addRow(new PrivateMessageModel(fromUser, message, false, position, uniqueID),
+                    toUser);
+        } else {
+            uniqueID = messageList.get(position).getCodeMessage();
+        }
+        addMessage(messageBuilder.id(id).codeMessage(uniqueID).build(), wasEdited, position);
 
         // perform the sending message attempt.
-        mSocket.emit("new message", toUser, message);
+        mSocket.emit("new message", toUser, message, wasEdited, position, uniqueID);
     }
 
-    private boolean checkIfActiveConversationWindow(String messageFromUser){
-        return messageFromUser.equals(toUser);
+    private boolean checkIfActiveConversationWindow(String messageFromUser) {
+        return messageFromUser.equals(toUser) && !isInBackground;
     }
 
     private void scrollToBottom() {
         messageView.scrollToPosition(adapter.getItemCount() - 1);
     }
 
-    private Emitter.Listener handlePrivateMessage = new Emitter.Listener() {
-        @Override
-        public void call(final Object... args) {
-            getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    JSONObject data = (JSONObject) args[0];
-                    String username;
-                    String message;
-                    try {
-                        username = data.getString("username");
-                        message = data.getString("message");
-                    } catch (JSONException e) {
-                        return;
+    private Emitter.Listener handlePrivateMessage = (Object... args) ->
+            getActivity().runOnUiThread(() -> {
+                try {
+                    PrivateMessageModel model = new PrivateMessageModel((JSONObject) args[0]);
+                    removeTyping(model.getUsername());
+                    boolean wasEditedBool = model.isWasEdited();
+                    Integer positionInt = model.getPosition();
+                    String senderUsername = model.getUsername();
+                    Message.Builder messageBuilder = new Message.Builder(
+                            Message.TYPE_MESSAGE).message(model.getMessage()).username(
+                            senderUsername).isEdited(wasEditedBool);
+                    if (checkIfActiveConversationWindow(senderUsername)) {
+                        long id = TableMessagesUtils.addToDatabase(model, db);
+                        addMessage(messageBuilder.id(id).build(), wasEditedBool, positionInt);
                     }
-
-                    removeTyping(username);
-                    if (checkIfActiveConversationWindow(username)) {
-                        addMessage(username, message);
-                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
                 }
             });
-        }
-    };
 
-    private Emitter.Listener onTyping = new Emitter.Listener() {
-        @Override
-        public void call(final Object... args) {
-            getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    JSONObject data = (JSONObject) args[0];
-                    String username;
-                    try {
-                        username = data.getString("username");
-                    } catch (JSONException e) {
-                        return;
+    private Emitter.Listener onTyping = (Object... args) ->
+            getActivity().runOnUiThread(() -> {
+                JSONObject data = (JSONObject) args[0];
+                String username;
+                try {
+                    username = data.getString("username");
+                    if (toUser.equals(username)) {
+                        addTyping(username);
                     }
-                    addTyping(username);
+                } catch (JSONException e) {
+                    return;
                 }
             });
+
+    private Emitter.Listener onStopTyping = args -> getActivity().runOnUiThread(() -> {
+        JSONObject data = (JSONObject) args[0];
+        String username;
+        try {
+            username = data.getString("username");
+        } catch (JSONException e) {
+            return;
         }
+        removeTyping(username);
+    });
+
+    private Runnable onTypingTimeout = () -> {
+        if (!isTyping) return;
+
+        isTyping = false;
+        mSocket.emit("stop typing PW", toUser);
     };
 
-    private Emitter.Listener onStopTyping = new Emitter.Listener() {
-        @Override
-        public void call(final Object... args) {
-            getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    JSONObject data = (JSONObject) args[0];
-                    String username;
-                    try {
-                        username = data.getString("username");
-                    } catch (JSONException e) {
-                        return;
-                    }
-                    removeTyping(username);
-                }
-            });
-        }
-    };
-
-    private Runnable onTypingTimeout = new Runnable() {
-        @Override
-        public void run() {
-            if (!isTyping) return;
-
-            isTyping = false;
-            mSocket.emit("stop typing PW", toUser);
-        }
-    };
-
-    private void removeHandlers(){
+    private void removeHandlers() {
         mSocket.off("pwMessage");
         mSocket.off("typing");
         mSocket.off("stop typing");

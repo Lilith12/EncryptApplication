@@ -1,23 +1,35 @@
 <resources>
     <string name="app_name">EncryptApplication</string>
-    <string name="welcomeText">Witaj w komunikatorze Encrypt Message. Wpisz poniżej swój nick i zacznij rozmawiać!</string>
-    <string name="welcomeButton">OK</string>
-    <string name="statsString">Obecnie na serwerze są:</string>
+    <string name="welcomeText">Welcome in EncryptMessage app. Enter your nick below and start to
+        talk!
+    </string>
+    <string name="statsString">Now on server are:</string>
     <string name="title_activity_menu">Menu</string>
 
-    <string name="navigation_drawer_open">Open navigation drawer</string>
-    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="navigation_drawer_open" translatable="false">Open navigation drawer</string>
+    <string name="navigation_drawer_close" translatable="false">Close navigation drawer</string>
 
-    <string name="drawer_open">lala</string>
-    <string name="drawer_close" id="dr">uuu</string>
+    <string name="drawer_open" translatable="false">lala</string>
+    <string name="drawer_close" id="dr" translatable="false">uuu</string>
 
     <string name="action_settings">Settings</string>
     <string name="title_activity_server_stats">ServerStats</string>
-
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
-    <string name="user_action_typing">pisze...</string>
-    <string name="message_notification">Nowa wiadomość od %s</string>
-    <string name="foreground_notification_title">EncryptApp działa teraz w tle</string>
-    <string name="foreground_notification_content">Kliknij aby zmaksymalizować</string>
+    <string name="user_action_typing">is typing…</string>
+    <string name="message_notification">New message from %s</string>
+    <string name="foreground_notification_title">EncryptApp now works in background</string>
+    <string name="foreground_notification_content">Click to maximalize</string>
+    <string name="enter_message">Enter message</string>
+    <string name="unique_room_name">Insert unique room name:</string>
+    <string name="ok" translatable="false">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="send">Send</string>
+    <string name="room_exists">Room with this name exists!</string>
+    <string name="exit_room">Do you really want to disconnect with this room?</string>
+    <string name="no">No</string>
+    <string name="users">Users</string>
+    <string name="new_room">New room</string>
+    <string name="messages">Messages</string>
+    <string name="yes">Yes</string>
+    <string name="user_connected_to_room">%s connected to the room</string>
+    <string name="user_disconnected_from_room">%s disconnected from the room</string>
 </resources>

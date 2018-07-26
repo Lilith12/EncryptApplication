@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context="layout.WritePrivateMessageFragment">
+    tools:context=".fragments.WritePrivateMessageFragment">
 
     <android.support.v7.widget.RecyclerView
         android:id="@+id/messages"
@@ -30,10 +30,11 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:hint="Wpisz wiadomość"
+            android:hint="@string/enter_message"
             android:imeActionId="@+id/send"
-            android:imeActionLabel="Wpisz wiadomość"
+            android:imeActionLabel="@string/enter_message"
             android:imeOptions="actionSend"
+            android:textColorHint="@color/colorAccent"
             android:inputType="text"
             android:maxLines="1"
             android:singleLine="true" />
@@ -41,7 +42,7 @@
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Wyślij"
+            android:text="@string/send"
             android:id="@+id/sendButton" />
     </LinearLayout>
 

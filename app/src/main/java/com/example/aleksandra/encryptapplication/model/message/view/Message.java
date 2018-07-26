@@ -1,4 +1,4 @@
-package com.example.aleksandra.encryptapplication;
+package com.example.aleksandra.encryptapplication.model.message.view;
 
 import android.graphics.Bitmap;
 
@@ -18,6 +18,9 @@ public class Message implements Serializable {
     private Bitmap mImage;
     private String mMessage;
     private String mUsername;
+    private long mId;
+    private String mCodeMessage;
+    private Boolean mIsEdited = false;
 
     private Message() {}
 
@@ -37,16 +40,35 @@ public class Message implements Serializable {
         return mImage;
     };
 
+    public long getId() {
+        return mId;
+    };
+
+    public String getCodeMessage() {
+        return mCodeMessage;
+    }
+
+    public Boolean isEdited() {
+        return mIsEdited;
+    }
 
 
     public static class Builder {
-        private final int mType;
-        private Bitmap mImage;
+        private long mId;
         private String mUsername;
         private String mMessage;
+        private final int mType;
+        private Bitmap mImage;
+        private String mCodeMessage;
+        private Boolean mIsEdited = false;
 
         public Builder(int type) {
             mType = type;
+        }
+
+        public Builder id(long id) {
+            mId = id;
+            return this;
         }
 
         public Builder username(String username) {
@@ -64,12 +86,25 @@ public class Message implements Serializable {
             return this;
         }
 
+        public Builder codeMessage(String codeMessage) {
+            mCodeMessage = codeMessage;
+            return this;
+        }
+
+        public Builder isEdited(boolean isEdited){
+            mIsEdited = isEdited;
+            return this;
+        }
+
         public Message build() {
             Message message = new Message();
+            message.mId = mId;
             message.mType = mType;
             message.mUsername = mUsername;
             message.mImage = mImage;
             message.mMessage = mMessage;
+            message.mCodeMessage = mCodeMessage;
+            message.mIsEdited = mIsEdited;
             return message;
         }
     }

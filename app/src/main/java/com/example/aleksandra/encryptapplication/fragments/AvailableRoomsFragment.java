@@ -1,4 +1,4 @@
-package layout;
+package com.example.aleksandra.encryptapplication.fragments;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -104,11 +104,11 @@ public class AvailableRoomsFragment extends Fragment {
                     final EditText roomNameField = new EditText(getActivity());
                     roomNameField.setTextColor(Color.rgb(255, 255, 255));
                     final AlertDialog.Builder builder = new AlertDialog.Builder(new ContextThemeWrapper(getActivity(), android.R.style.Theme_DeviceDefault_Dialog_NoActionBar));
-                    builder.setMessage("Wybierz unikalną nazwę pokoju:")
+                    builder.setMessage(getString(R.string.unique_room_name))
                            .setCancelable(true)
                            .setView(roomNameField)
-                           .setPositiveButton("OK", null)
-                           .setNegativeButton("Anuluj", new DialogInterface.OnClickListener() {
+                           .setPositiveButton(getString(R.string.ok), null)
+                           .setNegativeButton(getString(R.string.cancel), new DialogInterface.OnClickListener() {
                                 public void onClick(DialogInterface dialog, int id) {
                                     dialog.cancel();
                                 }
@@ -126,7 +126,7 @@ public class AvailableRoomsFragment extends Fragment {
                                 mSocket.emit("connect to room", roomName);
                                 d.dismiss();
                             } else {
-                                roomNameField.setError("Pokój o takiej nazwie istnieje!");
+                                roomNameField.setError(getString(R.string.room_exists));
                             }
                         }
                     });

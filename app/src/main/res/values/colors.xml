@@ -19,5 +19,7 @@
     <color name="username8">#3b88eb</color>
     <color name="username9">#3824aa</color>
     <color name="username10">#a700ff</color>
+    <color name="teal">#009688</color>
+    <color name="light_blue">#03A9F4</color>
 
 </resources>

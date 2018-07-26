@@ -1,9 +1,8 @@
-package layout;
+package com.example.aleksandra.encryptapplication.fragments;
 
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
@@ -15,7 +14,6 @@ import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.view.ContextThemeWrapper;
-import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -25,14 +23,13 @@ import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.aleksandra.encryptapplication.EncryptAppSocket;
 import com.example.aleksandra.encryptapplication.FileUtils;
-import com.example.aleksandra.encryptapplication.Message;
-import com.example.aleksandra.encryptapplication.MessageAdapter;
 import com.example.aleksandra.encryptapplication.R;
+import com.example.aleksandra.encryptapplication.model.message.view.Message;
+import com.example.aleksandra.encryptapplication.model.message.view.MessageAdapter;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -67,10 +64,11 @@ public class GroupChatFragment extends Fragment {
     private static final int TYPING_TIMER_LENGTH = 600;
     private boolean isTyping = false;
     private Handler typingHandler = new Handler();
-    String roomName;
-    String fromUser;
-    EditText messageField;
-    Socket mSocket;
+    private String roomName;
+    private String fromUser;
+    private EditText messageField;
+    private Socket mSocket;
+    private boolean isInBackground;
 
     // TODO: Rename and change types of parameters
     private String mParam1;
@@ -120,30 +118,37 @@ public class GroupChatFragment extends Fragment {
         menu.clear();
         inflater.inflate(R.menu.action_bar_disconnect, menu);
         inflater.inflate(R.menu.action_bar_add_image, menu);
-
     }
+
+    @Override
+    public void onStart(){
+        super.onStart();
+        isInBackground = false;
+    }
+
+    @Override
+    public void onStop(){
+        super.onStop();
+        if(!getActivity().isChangingConfigurations()){
+            isInBackground = true;
+        }
+    }
+
     private void addWarning(){
 
         final AlertDialog.Builder builder = new AlertDialog.Builder(new ContextThemeWrapper(getActivity(), android.R.style.Theme_DeviceDefault_Dialog_NoActionBar));
-        builder.setMessage("Czy na pewno chcesz rozłączyć się z pokojem?")
+        builder.setMessage(getString(R.string.exit_room))
                 .setCancelable(true)
-                .setPositiveButton("Tak", new DialogInterface.OnClickListener(){
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        mSocket.emit("disconnect from room", roomName);
-                        mSocket.emit("user disconnected");
-                        AvailableRoomsFragment rooms = new AvailableRoomsFragment();
-                        android.support.v4.app.FragmentTransaction fragmentTransaction = getActivity().getSupportFragmentManager().beginTransaction();
-                        fragmentTransaction.replace(R.id.fragment_container, rooms);
-                        fragmentTransaction.addToBackStack(null);
-                        fragmentTransaction.commit();
-                    }
+                .setPositiveButton(getString(R.string.yes), (dialog, which) -> {
+                    mSocket.emit("disconnect from room", roomName);
+                    mSocket.emit("user disconnected");
+                    AvailableRoomsFragment rooms = new AvailableRoomsFragment();
+                    android.support.v4.app.FragmentTransaction fragmentTransaction = getActivity().getSupportFragmentManager().beginTransaction();
+                    fragmentTransaction.replace(R.id.fragment_container, rooms);
+                    fragmentTransaction.addToBackStack(null);
+                    fragmentTransaction.commit();
                 })
-                .setNegativeButton("Nie", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        dialog.cancel();
-                    }
-                }).create();
+                .setNegativeButton(getString(R.string.no), (dialog, id) -> dialog.cancel()).create();
         final AlertDialog dialog = builder.create();
         dialog.show();
     }
@@ -207,11 +212,6 @@ public class GroupChatFragment extends Fragment {
         removeHandlers();
     }
 
-    @Override
-    public void onDetach() {
-        super.onDetach();
-    }
-
     /**
      * This interface must be implemented by activities that contain this
      * fragment to allow an interaction in this fragment to be communicated
@@ -230,9 +230,9 @@ public class GroupChatFragment extends Fragment {
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        messageField = (EditText) getActivity().findViewById(R.id.messageField);
+        messageField = getActivity().findViewById(R.id.messageField);
         messageField.setTextColor(Color.rgb(255, 255, 255));
-        Button sendMessageButton = (Button) getActivity().findViewById(R.id.sendButton);
+        Button sendMessageButton = getActivity().findViewById(R.id.sendButton);
 
         final EncryptAppSocket app = (EncryptAppSocket) getActivity().getApplication();
         mSocket = app.getSocket();
@@ -242,30 +242,22 @@ public class GroupChatFragment extends Fragment {
         mSocket.on("stopGroupTyping", onStopTyping);
         mSocket.on("user connected", onConnect);
         mSocket.on("user disconnected", onDisconnect);
-        messageView = (RecyclerView) getActivity().findViewById(R.id.messages);
+        messageView = getActivity().findViewById(R.id.messages);
         messageView.setLayoutManager(new LinearLayoutManager(getActivity()));
         messageView.setAdapter(adapter);
 
         setMessageFieldListeners();
         loadPreviousMessages();
-        sendMessageButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                attemptSend();
-            }
-        });
+        sendMessageButton.setOnClickListener(v -> attemptSend());
     }
 
     private void setMessageFieldListeners() {
-        messageField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView v, int id, KeyEvent event) {
-                if (id == R.id.send || id == EditorInfo.IME_NULL) {
-                    attemptSend();
-                    return true;
-                }
-                return false;
+        messageField.setOnEditorActionListener((v, id, event) -> {
+            if (id == R.id.send || id == EditorInfo.IME_NULL) {
+                attemptSend();
+                return true;
             }
+            return false;
         });
 
         messageField.addTextChangedListener(new TextWatcher() {
@@ -349,122 +341,83 @@ public class GroupChatFragment extends Fragment {
         messageView.scrollToPosition(adapter.getItemCount() - 1);
     }
 
-    private Emitter.Listener handleGroupMessage = new Emitter.Listener() {
-        @Override
-        public void call(final Object... args) {
-            getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    JSONObject data = (JSONObject) args[0];
-                    String username;
-                    String message;
-                    try {
-                        username = data.getString("username");
-                        message = data.getString("message");
-                    } catch (JSONException e) {
-                        return;
+    private Emitter.Listener handleGroupMessage = args -> getActivity().runOnUiThread(() -> {
+        JSONObject data = (JSONObject) args[0];
+        String username;
+        String message;
+        try {
+            username = data.getString("username");
+            message = data.getString("message");
+        } catch (JSONException e) {
+            return;
+        }
+
+        removeTyping(username);
+        addMessage(username, message);
+    });
+
+    private Emitter.Listener onConnect = args -> {
+        JSONObject data = (JSONObject) args[0];
+        final String username;
+        try {
+            username = data.getString("username");
+        } catch (JSONException e) {
+            return;
+        }
+        getActivity().runOnUiThread(() -> Toast.makeText(getActivity().getApplicationContext(),
+                getString(R.string.user_connected_to_room, username), Toast.LENGTH_LONG).show());
+    };
+
+    private Emitter.Listener onDisconnect = args -> {
+        JSONObject data = (JSONObject) args[0];
+        final String username;
+        try {
+            username = data.getString("username");
+        } catch (JSONException e) {
+            return;
+        }
+        getActivity().runOnUiThread(() -> Toast.makeText(getActivity().getApplicationContext(),
+                getString(R.string.user_disconnected_from_room, username),
+                Toast.LENGTH_LONG).show());
+    };
+
+    private Emitter.Listener onTyping = (Object... args) ->
+            getActivity().runOnUiThread(() -> {
+                JSONObject data = (JSONObject) args[0];
+                String username;
+                String fromRoomName;
+                try {
+                    username = data.getString("username");
+                    fromRoomName = data.getString("roomName");
+                    if (roomName.equals(fromRoomName)) {
+                        addTyping(username);
                     }
-
-                    removeTyping(username);
-                    addMessage(username, message);
+                } catch (JSONException e) {
+                    return;
                 }
             });
+
+    private Emitter.Listener onStopTyping = args -> getActivity().runOnUiThread(() -> {
+        JSONObject data = (JSONObject) args[0];
+        String username;
+        try {
+            username = data.getString("username");
+        } catch (JSONException e) {
+            return;
         }
-    };
+        removeTyping(username);
+    });
 
-    private Emitter.Listener onConnect = new Emitter.Listener() {
-        @Override
-        public void call(Object... args) {
-            JSONObject data = (JSONObject) args[0];
-            final String username;
-            try {
-                username = data.getString("username");
-            } catch (JSONException e) {
-                return;
-            }
-            getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                        Toast.makeText(getActivity().getApplicationContext(), username+" dołączył do pokoju"
-                                , Toast.LENGTH_LONG).show();
-                }
-            });
-        }
-    };
+    private Runnable onTypingTimeout = () -> {
+        if (!isTyping) return;
 
-    private Emitter.Listener onDisconnect = new Emitter.Listener() {
-
-        @Override
-        public void call(Object... args) {
-            JSONObject data = (JSONObject) args[0];
-            final String username;
-            try {
-                username = data.getString("username");
-            } catch (JSONException e) {
-                return;
-            }
-            getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    Toast.makeText(getActivity().getApplicationContext(), username+ " rozłączył się z pokojem"
-                            , Toast.LENGTH_LONG).show();
-                }
-            });
-        }
-    };
-
-    private Emitter.Listener onTyping = new Emitter.Listener() {
-        @Override
-        public void call(final Object... args) {
-            getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    JSONObject data = (JSONObject) args[0];
-                    String username;
-                    try {
-                        username = data.getString("username");
-                    } catch (JSONException e) {
-                        return;
-                    }
-                    addTyping(username);
-                }
-            });
-        }
-    };
-
-    private Emitter.Listener onStopTyping = new Emitter.Listener() {
-        @Override
-        public void call(final Object... args) {
-            getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    JSONObject data = (JSONObject) args[0];
-                    String username;
-                    try {
-                        username = data.getString("username");
-                    } catch (JSONException e) {
-                        return;
-                    }
-                    removeTyping(username);
-                }
-            });
-        }
-    };
-
-    private Runnable onTypingTimeout = new Runnable() {
-        @Override
-        public void run() {
-            if (!isTyping) return;
-
-            isTyping = false;
-            mSocket.emit("stop typing to group", roomName);
-        }
+        isTyping = false;
+        mSocket.emit("stop typing to group", roomName);
     };
 
     private void readFromFile(File file){
         String username;
-        try {
-            FileReader fileReader = new FileReader(file);
+        try(FileReader fileReader = new FileReader(file)) {
             BufferedReader bufferedReader = new BufferedReader(fileReader);
             while((username = bufferedReader.readLine()) != null){
                 addMessage(username, bufferedReader.readLine());
@@ -475,7 +428,7 @@ public class GroupChatFragment extends Fragment {
     }
 
     private void loadPreviousMessages() {
-        File outputTempFile = new File(getContext().getCacheDir().getPath() + "/" + FileUtils.encodeFileName(roomName));
+        File outputTempFile = new File(getContext().getCacheDir().getPath() + File.separatorChar + FileUtils.encodeFileName(roomName));
         if(outputTempFile.isFile()){
             readFromFile(outputTempFile);
         }

@@ -12,6 +12,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 
+import java.io.File;
+
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
 
@@ -46,6 +48,7 @@ public class ChooseLoginActivity extends AppCompatActivity implements View.OnCli
     private Emitter.Listener onLogin = new Emitter.Listener() {
         @Override
         public void call(Object... args) {
+            deleteConversationHistory();
             EncryptAppSocket app = (EncryptAppSocket) getApplication();
             app.setUsername(username);
             Intent intent = new Intent(ChooseLoginActivity.this, ServerStatsActivity.class);
@@ -92,6 +95,14 @@ public class ChooseLoginActivity extends AppCompatActivity implements View.OnCli
         button.setOnClickListener(this);
         mSocket.on("arrayOfUsers", onLogin);
         mSocket.on("usernameUsed", usernameUsed);
+    }
+
+    private void deleteConversationHistory(){
+        for (File file : getApplicationContext().getCacheDir().listFiles()) {
+            if (file.isFile()) {
+                file.delete();
+            }
+        }
     }
 
     @Override

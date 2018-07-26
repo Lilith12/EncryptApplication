@@ -1,15 +1,20 @@
-package com.example.aleksandra.encryptapplication;
+package com.example.aleksandra.encryptapplication.model.message.view;
 
 /**
  * Created by Aleksandra on 2016-11-19.
  */
+
 import android.content.Context;
+import android.content.res.Resources;
+import android.support.v4.content.res.ResourcesCompat;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+
+import com.example.aleksandra.encryptapplication.R;
 
 import java.util.List;
 
@@ -18,10 +23,12 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
 
     private List<Message> mMessages;
     private int[] mUsernameColors;
+    Resources resources;
 
     public MessageAdapter(Context context, List<Message> messages) {
         mMessages = messages;
-        mUsernameColors = context.getResources().getIntArray(R.array.username_colors);
+        resources = context.getResources();
+        mUsernameColors = resources.getIntArray(R.array.username_colors);
     }
 
     @Override
@@ -50,6 +57,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
        // viewHolder.setImage(message.getImage());
         viewHolder.setMessage(message.getMessage());
         viewHolder.setUsername(message.getUsername());
+//        viewHolder.setEdited(message.isEdited());
     }
 
     @Override
@@ -65,6 +73,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
     public class ViewHolder extends RecyclerView.ViewHolder {
         private TextView mUsernameView;
         private TextView mMessageView;
+        private TextView mEditedView;
         private ImageView mImageView;
 
         public ViewHolder(View itemView) {
@@ -72,6 +81,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
             mImageView = (ImageView) itemView.findViewById(R.id.image);
             mUsernameView = (TextView) itemView.findViewById(R.id.username);
             mMessageView = (TextView) itemView.findViewById(R.id.message);
+            mEditedView = (TextView) itemView.findViewById(R.id.edited);
         }
 
         public void setUsername(String username) {
@@ -82,8 +92,16 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
 
         public void setMessage(String message) {
             if (null == mMessageView) return;
+            int fontColor = ResourcesCompat.getColor(resources, R.color.fontColor, null);
+            mMessageView.setTextColor(fontColor);
             mMessageView.setText(message);
         }
+
+//        public void setEdited(Boolean wasEdited){
+//            if(wasEdited != null){
+//                mEditedView.setText(wasEdited ? "Edited" : "");
+//            }
+//        }
 
         private int getUsernameColor(String username) {
             int hash = 7;

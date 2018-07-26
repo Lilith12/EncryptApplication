@@ -1,14 +1,14 @@
-package layout;
+package com.example.aleksandra.encryptapplication.fragments;
 
 import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentTransaction;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.ListView;
@@ -21,6 +21,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Optional;
 
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
@@ -40,7 +41,7 @@ public class ConnectedUsersFragment extends Fragment {
     private static final String ARG_PARAM2 = "param2";
     private ListView users;
     private Socket mSocket;
-    private ArrayList<String> userList = new ArrayList<String>();
+    private ArrayList<String> userList = new ArrayList();
     private ArrayAdapter<String> adapter;
     private final String getUsers = "get users";
     String jsonObject;
@@ -84,24 +85,26 @@ public class ConnectedUsersFragment extends Fragment {
 
     }
 
-    private Emitter.Listener handleUserJsonArray = new Emitter.Listener(){
-
-        @Override
-        public void call(Object... args) {
-            JSONObject data = (JSONObject) args[0];
-            userList.clear();
-            try {
-                jsonObject = data.getString("userssSocket");
-                JSONArray jsonArray = new JSONArray(jsonObject);
-
-                for (int i = 0; i < jsonArray.length() ; i++) {
-                    userList.add(jsonArray.getString(i));
-                }
-            } catch (JSONException e) {
-                return;
-            }
-        }
+    private Emitter.Listener handleUserJsonArray = (Object... args) -> {
+        JSONObject data = (JSONObject) args[0];
+        View view = getView();
+        Optional.ofNullable(view).ifPresent(
+                presentView -> presentView.post(() -> addNewUserToList(data)));
     };
+
+    private void addNewUserToList(JSONObject data) {
+        userList.clear();
+        try {
+            jsonObject = data.getString("userssSocket");
+            JSONArray jsonArray = new JSONArray(jsonObject);
+            for (int i = 0; i < jsonArray.length(); i++) {
+                userList.add(jsonArray.getString(i));
+                adapter.notifyDataSetChanged();
+            }
+        } catch (JSONException e) {
+            return;
+        }
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -159,30 +162,25 @@ public class ConnectedUsersFragment extends Fragment {
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        users = (ListView) getView().findViewById(R.id.userlistView);
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity(),
-                R.layout.simple_item_list_layout, R.id.label, userList);
+        users = getView().findViewById(R.id.userlistView);
+        adapter = new ArrayAdapter(getActivity(), R.layout.simple_item_list_layout, R.id.label,
+                userList);
         users.setAdapter(adapter);
-        users.setOnItemClickListener(new AdapterView.OnItemClickListener()
-        {
-            @Override
-            public void onItemClick(AdapterView<?> adapter, View v, int position,
-                                    long arg3)
-            {
-                String value = (String)adapter.getItemAtPosition(position);
+        adapter.notifyDataSetChanged();
+        users.setOnItemClickListener((adapter1, v, position, arg3) -> {
+            String value = (String) adapter1.getItemAtPosition(position);
 
-                Bundle bundle = new Bundle();
-                bundle.putString("username", value);
+            Bundle bundle = new Bundle();
+            bundle.putString("username", value);
 
-                WritePrivateMessageFragment pwMessage = new WritePrivateMessageFragment();
-                pwMessage.setArguments(bundle);
-                android.support.v4.app.FragmentTransaction fragmentTransaction = getActivity().getSupportFragmentManager().beginTransaction();
-                fragmentTransaction.replace(R.id.fragment_container, pwMessage);
-                fragmentTransaction.addToBackStack(null);
-                fragmentTransaction.commit();
-                // assuming string and if you want to get the value on click of list item
-                // do what you intend to do on click of listview row
-            }
+            WritePrivateMessageFragment pwMessage = new WritePrivateMessageFragment();
+            pwMessage.setArguments(bundle);
+            FragmentTransaction fragmentTransaction = getActivity().getSupportFragmentManager().beginTransaction();
+            fragmentTransaction.replace(R.id.fragment_container, pwMessage);
+            fragmentTransaction.addToBackStack(null);
+            fragmentTransaction.commit();
+            // assuming string and if you want to get the value on click of list item
+            // do what you intend to do on click of listview row
         });
         EncryptAppSocket app = (EncryptAppSocket) getActivity().getApplication();
         mSocket = app.getSocket();
