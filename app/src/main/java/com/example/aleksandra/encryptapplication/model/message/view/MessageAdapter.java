@@ -44,6 +44,8 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
             case Message.TYPE_ACTION:
                 layout = R.layout.item_action;
                 break;
+            default:
+                break;
         }
         View v = LayoutInflater
                 .from(parent.getContext())
@@ -54,10 +56,10 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
     @Override
     public void onBindViewHolder(ViewHolder viewHolder, int position) {
         Message message = mMessages.get(position);
-       // viewHolder.setImage(message.getImage());
+//         viewHolder.setImage(sendMessage.getImage());
         viewHolder.setMessage(message.getMessage());
         viewHolder.setUsername(message.getUsername());
-//        viewHolder.setEdited(message.isEdited());
+        viewHolder.setEdited(message.isEdited());
     }
 
     @Override
@@ -78,10 +80,10 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
 
         public ViewHolder(View itemView) {
             super(itemView);
-            mImageView = (ImageView) itemView.findViewById(R.id.image);
-            mUsernameView = (TextView) itemView.findViewById(R.id.username);
-            mMessageView = (TextView) itemView.findViewById(R.id.message);
-            mEditedView = (TextView) itemView.findViewById(R.id.edited);
+            mImageView = itemView.findViewById(R.id.image);
+            mUsernameView = itemView.findViewById(R.id.username);
+            mMessageView = itemView.findViewById(R.id.message);
+            mEditedView = itemView.findViewById(R.id.edited);
         }
 
         public void setUsername(String username) {
@@ -97,11 +99,11 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
             mMessageView.setText(message);
         }
 
-//        public void setEdited(Boolean wasEdited){
-//            if(wasEdited != null){
-//                mEditedView.setText(wasEdited ? "Edited" : "");
-//            }
-//        }
+        public void setEdited(Boolean wasEdited){
+            if(wasEdited != null && mEditedView != null){
+                mEditedView.setText(wasEdited ? "Edited" : "");
+            }
+        }
 
         private int getUsernameColor(String username) {
             int hash = 7;

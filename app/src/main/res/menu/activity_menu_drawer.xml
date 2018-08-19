@@ -13,17 +13,13 @@
 
     <!--</group>-->
 
-    <item android:title="Wiadomości">
+    <item android:title="@string/Messages"
+    android:id="@+id/messageTitleNav">
         <menu>
             <item
                 android:id="@+id/nav_write"
                 android:icon="@drawable/a"
                 android:title="@string/users" />
-            <!--<item-->
-                <!--android:id="@+id/nav_open"-->
-                <!--android:icon="@drawable/open_icon"-->
-                <!--android:onClick="setUsersFragment"-->
-                <!--android:title="Skrzynka" />-->
             <item
                 android:id="@+id/nav_room"
                 android:icon="@drawable/plus2"

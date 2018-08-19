@@ -34,4 +34,9 @@
         <item name="android:windowMinWidthMinor">@android:dimen/dialog_min_width_minor</item>
     </style>
 
+    <style name="TextApperanceNavBar">
+        <item name="android:textColor">#FFF000</item>
+        <item name="android:textSize">20sp</item>
+    </style>
+
 </resources>

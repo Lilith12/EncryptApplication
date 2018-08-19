@@ -6,8 +6,9 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
+import com.example.aleksandra.encryptapplication.encrypt.RSA;
 import com.example.aleksandra.encryptapplication.model.message.view.Message;
-import com.example.aleksandra.encryptapplication.model.message.websocket.PrivateMessageModel;
+import com.example.aleksandra.encryptapplication.model.message.websocket.MessageModel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,8 +41,8 @@ public class DatabaseHandler extends SQLiteOpenHelper {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
 
-    public static DatabaseHandler getDatabaseHandler(Context context){
-        if(databaseHandler == null){
+    public static DatabaseHandler getDatabaseHandler(Context context) {
+        if (databaseHandler == null) {
             databaseHandler = new DatabaseHandler(context);
         }
         return databaseHandler;
@@ -52,22 +53,22 @@ public class DatabaseHandler extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase db) {
         String CREATE_MESSAGE_TABLE = "CREATE TABLE " + TABLE_MESSAGES + "("
                 + KEY_ID + " INTEGER PRIMARY KEY," + KEY_USERNAME + " TEXT,"
-                + KEY_MESSAGE + " TEXT," + KEY_MESSAGE_CODE + " TEXT," + KEY_CONVERSATION_CODE + " TEXT,"
-                + KEY_TIMESTAMP +" DATETIME DEFAULT CURRENT_TIMESTAMP" + ");";
+                + KEY_MESSAGE + " TEXT," + KEY_MESSAGE_CODE + " TEXT," + KEY_CONVERSATION_CODE
+                + " TEXT," + KEY_TIMESTAMP + " DATETIME DEFAULT CURRENT_TIMESTAMP" + ");";
         db.execSQL(CREATE_MESSAGE_TABLE);
     }
 
     // Upgrading database
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-//        // Drop older table if existed
-//        db.execSQL("DROP TABLE IF EXISTS " + TABLE_MESSAGES);
-//
-//        // Create tables again
-//        onCreate(db);
+        // Drop older table if existed
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_MESSAGES);
+
+        // Create tables again
+        onCreate(db);
     }
 
-    public long addRow(PrivateMessageModel message, String conversationCode) {
+    public synchronized long addRow(MessageModel message, String conversationCode) {
         SQLiteDatabase db = this.getWritableDatabase();
 
         ContentValues values = new ContentValues();
@@ -85,7 +86,9 @@ public class DatabaseHandler extends SQLiteOpenHelper {
         List<Message> messageList = new ArrayList<>();
 
         // Select All Query
-        String selectQuery = "SELECT * FROM " + TABLE_MESSAGES + " WHERE " + KEY_CONVERSATION_CODE + " = '"+conversationCode+"' ORDER BY " + KEY_TIMESTAMP + " ASC";
+        String selectQuery =
+                "SELECT * FROM " + TABLE_MESSAGES + " WHERE " + KEY_CONVERSATION_CODE + " = '"
+                        + conversationCode + "' ORDER BY " + KEY_TIMESTAMP + " ASC";
 
         SQLiteDatabase db = this.getWritableDatabase();
         Cursor cursor = db.rawQuery(selectQuery, null);
@@ -101,7 +104,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
                 username = cursor.getString(1);
                 messageString = cursor.getString(2);
                 message = new Message.Builder(Message.TYPE_MESSAGE).id(id).username(
-                        username).message(messageString).build();
+                        username).message(decryptMessage(messageString)).build();
                 // Adding contact to list
                 messageList.add(message);
                 cursor.moveToNext();
@@ -111,8 +114,14 @@ public class DatabaseHandler extends SQLiteOpenHelper {
         return messageList;
     }
 
-    public Message getMessageByUUID(String uuid){
-        String selectQuery = "SELECT * FROM " + TABLE_MESSAGES + " WHERE " + KEY_MESSAGE_CODE + " = '"+uuid+"'";
+    private String decryptMessage(String message) {
+        return RSA.getRSAInstance().decrypt(message);
+    }
+
+    public Message getMessageByUUID(String uuid) {
+        String selectQuery =
+                "SELECT * FROM " + TABLE_MESSAGES + " WHERE " + KEY_MESSAGE_CODE + " = '" + uuid
+                        + "'";
 
         SQLiteDatabase db = this.getWritableDatabase();
         Cursor cursor = db.rawQuery(selectQuery, null);
@@ -131,6 +140,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
             message = new Message.Builder(Message.TYPE_MESSAGE).id(id).username(username).message(
                     messageString).codeMessage(messageCode).build();
         }
+        cursor.close();
         return message;
     }
 
@@ -142,7 +152,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 
         // updating row
         return db.update(TABLE_MESSAGES, values, KEY_ID + " = ?",
-                new String[] { String.valueOf(message.getId()) });
+                new String[]{String.valueOf(message.getId())});
     }
 
     public void deleteMessage(Message message) {
@@ -150,5 +160,19 @@ public class DatabaseHandler extends SQLiteOpenHelper {
         db.delete(TABLE_MESSAGES, KEY_ID + " = ?",
                 new String[]{String.valueOf(message.getId())});
         db.close();
+    }
+
+    public void dropTable() {
+        SQLiteDatabase db = this.getWritableDatabase();
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_MESSAGES);
+    }
+
+    public void recreateTable(){
+        SQLiteDatabase db = this.getWritableDatabase();
+        String CREATE_MESSAGE_TABLE = "CREATE TABLE " + TABLE_MESSAGES + "("
+                + KEY_ID + " INTEGER PRIMARY KEY," + KEY_USERNAME + " TEXT,"
+                + KEY_MESSAGE + " TEXT," + KEY_MESSAGE_CODE + " TEXT," + KEY_CONVERSATION_CODE
+                + " TEXT," + KEY_TIMESTAMP + " DATETIME DEFAULT CURRENT_TIMESTAMP" + ");";
+        db.execSQL(CREATE_MESSAGE_TABLE);
     }
 }

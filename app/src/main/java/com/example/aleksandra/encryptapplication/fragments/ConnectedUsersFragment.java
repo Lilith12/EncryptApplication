@@ -10,11 +10,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.BaseAdapter;
 import android.widget.ListView;
 
 import com.example.aleksandra.encryptapplication.EncryptAppSocket;
 import com.example.aleksandra.encryptapplication.R;
+import com.example.aleksandra.encryptapplication.ServerStatsActivity;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -35,21 +35,13 @@ import io.socket.emitter.Emitter;
  * create an instance of this fragment.
  */
 public class ConnectedUsersFragment extends Fragment {
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
     private ListView users;
     private Socket mSocket;
     private ArrayList<String> userList = new ArrayList();
     private ArrayAdapter<String> adapter;
-    private final String getUsers = "get users";
+    private static final String getUsers = "get users";
     String jsonObject;
     Handler handler;
-
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
 
     private OnFragmentInteractionListener mListener;
 
@@ -57,20 +49,9 @@ public class ConnectedUsersFragment extends Fragment {
         // Required empty public constructor
     }
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment ConnectedUsersFragment.
-     */
-    // TODO: Rename and change types and number of parameters
     public static ConnectedUsersFragment newInstance(String param1, String param2) {
         ConnectedUsersFragment fragment = new ConnectedUsersFragment();
         Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
         fragment.setArguments(args);
         return fragment;
     }
@@ -78,11 +59,7 @@ public class ConnectedUsersFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
-
+        ((ServerStatsActivity) getActivity()).setActionBarTitle(R.string.user_fragment_title);
     }
 
     private Emitter.Listener handleUserJsonArray = (Object... args) -> {
@@ -95,7 +72,7 @@ public class ConnectedUsersFragment extends Fragment {
     private void addNewUserToList(JSONObject data) {
         userList.clear();
         try {
-            jsonObject = data.getString("userssSocket");
+            jsonObject = data.getString("users");
             JSONArray jsonArray = new JSONArray(jsonObject);
             for (int i = 0; i < jsonArray.length(); i++) {
                 userList.add(jsonArray.getString(i));
@@ -109,11 +86,9 @@ public class ConnectedUsersFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_connected_users, container, false);
     }
 
-    // TODO: Rename method, update argument and hook method into UI event
     public void onButtonPressed(Uri uri) {
         if (mListener != null) {
             mListener.onFragmentInteraction(uri);
@@ -141,7 +116,6 @@ public class ConnectedUsersFragment extends Fragment {
     public void onStop() {
         super.onStop();
         mListener = null;
-        handler.removeCallbacks(run);
     }
 
     /**
@@ -155,7 +129,6 @@ public class ConnectedUsersFragment extends Fragment {
      * >Communicating with Other Fragments</a> for more information.
      */
     public interface OnFragmentInteractionListener {
-        // TODO: Update argument type and name
         void onFragmentInteraction(Uri uri);
     }
 
@@ -182,20 +155,14 @@ public class ConnectedUsersFragment extends Fragment {
             // assuming string and if you want to get the value on click of list item
             // do what you intend to do on click of listview row
         });
-        EncryptAppSocket app = (EncryptAppSocket) getActivity().getApplication();
+        EncryptAppSocket app = getApplication();
         mSocket = app.getSocket();
         mSocket.on("usersArray", handleUserJsonArray);
-//        initUsersListView();
+        mSocket.emit(getUsers);
         handler = new Handler();
-        run.run();
     }
-    Runnable run = new Runnable() {
-        @Override
-        public void run() {
-            //Do something after 20 seconds
-            mSocket.emit(getUsers);
-            ((BaseAdapter) users.getAdapter()).notifyDataSetChanged();
-            handler.postDelayed(run, 5000);
-        }
-    };
+
+    private EncryptAppSocket getApplication() {
+        return (EncryptAppSocket) getActivity().getApplication();
+    }
 }

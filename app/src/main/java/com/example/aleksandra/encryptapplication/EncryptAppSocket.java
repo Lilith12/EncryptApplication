@@ -12,18 +12,20 @@ import io.socket.client.Socket;
  */
 public class EncryptAppSocket extends Application {
 
-    private final String hostname = "http://ec2-18-130-182-33.eu-west-2.compute.amazonaws.com:8085";
-    private final String localhostHostname = "http://192.168.1.11:8085"; //netstat -r 0.0.0.0
+    private static final String hostname = "http://ec2-18-130-182-33.eu-west-2.compute.amazonaws.com:8085";
+    private static final String localhostHostname = "http://192.168.1.11:8085"; //netstat -r 0.0.0.0
 
     private String username;
     private Socket mSocket;
 
-    public EncryptAppSocket(){ }
+    public EncryptAppSocket(){
+        // Class with application needs public constructor
+    }
 
     public Socket getSocket() {
         if (mSocket == null) {
             try {
-                mSocket = IO.socket(hostname);
+                mSocket = IO.socket(localhostHostname);
             } catch (URISyntaxException e) {
                 throw new RuntimeException(e);
             }

@@ -25,4 +25,9 @@
     <string name="messages">Wiadomości</string>
     <string name="user_connected_to_room">%s dołączył do pokoju</string>
     <string name="user_disconnected_from_room">%s rozłączył się z pokojem</string>
+    <string name="username_not_available">Nazwa jest już zajęta. Wybierz inną.</string>
+    <string name="field_error">To pole jest wymagane</string>
+    <string name="Messages">Wiadomości</string>
+    <string name="user_fragment_title">Aktywni użytkowniki</string>
+    <string name="group_fragment_title">Aktywne grupy</string>
 </resources>

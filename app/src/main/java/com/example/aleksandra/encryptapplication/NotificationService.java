@@ -12,19 +12,17 @@ import android.media.RingtoneManager;
 import android.os.IBinder;
 
 import com.example.aleksandra.encryptapplication.handlers.TableMessagesUtils;
-import com.example.aleksandra.encryptapplication.model.message.websocket.PrivateMessageModel;
+import com.example.aleksandra.encryptapplication.model.message.websocket.MessageModel;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import io.socket.client.Ack;
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
 
 public class NotificationService extends Service {
     private Socket mSocket;
-    public NotificationService() {
-    }
-
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         return START_STICKY;
@@ -41,7 +39,7 @@ public class NotificationService extends Service {
     public void onDestroy() {
         mSocket.off("pwMessageGlobal");
         mSocket.off("groupMessageGlobal");
-        EncryptAppSocket app = (EncryptAppSocket) this.getApplication();
+        EncryptAppSocket app = (EncryptAppSocket) getApplication();
         mSocket.emit("disconnect user", app.getUsername());
         mSocket.disconnect();
     }
@@ -71,6 +69,7 @@ public class NotificationService extends Service {
         mSocket = app.getSocket();
         mSocket.on("pwMessageGlobal", handlePrivateMessage);
         mSocket.on("groupMessageGlobal", handleGroupMessage);
+        mSocket.on("userActive", userActive);
     }
 
     private Emitter.Listener handlePrivateMessage = args -> {
@@ -78,7 +77,7 @@ public class NotificationService extends Service {
             @Override
             public void run() {
                 try {
-                    PrivateMessageModel model = new PrivateMessageModel((JSONObject) args[0]);
+                    MessageModel model = new MessageModel((JSONObject) args[0]);
                     TableMessagesUtils.addToDatabase(model, getDatabaseHandler(getApplicationContext()));
                     createNotification(model, "WritePrivateMessageFragment", model.getUsername());
                 } catch (JSONException e) {
@@ -95,10 +94,9 @@ public class NotificationService extends Service {
             public void run() {
                 try {
                     JSONObject data = (JSONObject) args[0];
-                    PrivateMessageModel model = new PrivateMessageModel(data);
+                    MessageModel model = new MessageModel(data);
                     TableMessagesUtils.addToDatabase(model, getDatabaseHandler(getApplicationContext()));
-                    createNotification(model, "GroupChatFragment",
-                            data.getString("roomName"));
+                    createNotification(model, "GroupChatFragment", data.getString("roomName"));
                 } catch (JSONException e) {
                     return;
                 }
@@ -107,7 +105,12 @@ public class NotificationService extends Service {
         handleGroupMessageThread.start();
     };
 
-    private void createNotification(PrivateMessageModel model, String fragment, String chatView) {
+    private Emitter.Listener userActive = args -> {
+        Ack ack = (Ack) args[args.length - 1];
+        ack.call();
+    };
+
+    private void createNotification(MessageModel model, String fragment, String chatView) {
         Context ctx = NotificationService.this;
         Intent notificationIntent = new Intent(ctx, ServerStatsActivity.class);
         notificationIntent.putExtra("fragment", fragment);
@@ -127,7 +130,7 @@ public class NotificationService extends Service {
                 .setVibrate(new long[]{250, 250, 250, 250})
                 .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
                 .setContentTitle(getString(R.string.message_notification, model.getUsername()))
-                .setContentText(model.getMessage());
+                .setContentText(model.decryptMessage());
         Notification n = builder.build();
 
         nm.notify(2, n);

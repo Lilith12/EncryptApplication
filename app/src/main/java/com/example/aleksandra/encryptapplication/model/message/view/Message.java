@@ -26,23 +26,23 @@ public class Message implements Serializable {
 
     public int getType() {
         return mType;
-    };
+    }
 
     public String getMessage() {
         return mMessage;
-    };
+    }
 
     public String getUsername() {
         return mUsername;
-    };
+    }
 
     public Bitmap getImage() {
         return mImage;
-    };
+    }
 
     public long getId() {
         return mId;
-    };
+    }
 
     public String getCodeMessage() {
         return mCodeMessage;

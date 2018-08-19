@@ -10,6 +10,9 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.SpannableString;
+import android.text.style.TextAppearanceSpan;
+import android.view.Menu;
 import android.view.MenuItem;
 
 import com.example.aleksandra.encryptapplication.fragments.AvailableRoomsFragment;
@@ -36,6 +39,7 @@ public class ServerStatsActivity extends AppCompatActivity implements ConnectedU
         mDrawerLayout = findViewById(R.id.drawer_layout);
         nvDrawer = findViewById(R.id.nav_view);
         // Setup drawer view
+        setupDrawerTitle();
         setupDrawerContent(nvDrawer);
 
         mDrawerToggle = setupDrawerToggle(toolbar);
@@ -71,6 +75,23 @@ public class ServerStatsActivity extends AppCompatActivity implements ConnectedU
         this.startService(serviceIntent);
     }
 
+    public void setActionBarTitle(int resource){
+        getSupportActionBar().setTitle(resource);
+    }
+
+    public void setActionBarTitle(String title){
+        getSupportActionBar().setTitle(title);
+    }
+
+    private void setupDrawerTitle() {
+        Menu menu = nvDrawer.getMenu();
+        MenuItem messageItem = menu.findItem(R.id.messageTitleNav);
+        SpannableString string = new SpannableString(messageItem.getTitle());
+        string.setSpan(new TextAppearanceSpan(this, R.style.TextApperanceNavBar), 0, string.length(), 0);
+        messageItem.setTitle(string);
+        nvDrawer.setNavigationItemSelectedListener(this::onOptionsItemSelected);
+    }
+
     private void replaceGroupMessageFragment() {
         Bundle bundle = new Bundle();
         bundle.putString("roomName", getIntent().getStringExtra("chatView"));
@@ -101,22 +122,18 @@ public class ServerStatsActivity extends AppCompatActivity implements ConnectedU
     }
 
     private ActionBarDrawerToggle setupDrawerToggle(Toolbar toolbar) {
-        // NOTE: Make sure you pass in a valid toolbar reference.  ActionBarDrawToggle() does not require it
-        // and will not render the hamburger icon without it.
         return new ActionBarDrawerToggle(this, mDrawerLayout, toolbar, 0, R.string.drawer_open);
     }
 
     @Override
     protected void onPostCreate(Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
-        // Sync the toggle state after onRestoreInstanceState has occurred.
         mDrawerToggle.syncState();
     }
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        // Pass any configuration change to the drawer toggles
         mDrawerToggle.onConfigurationChanged(newConfig);
     }
 
@@ -130,9 +147,6 @@ public class ServerStatsActivity extends AppCompatActivity implements ConnectedU
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Pass the event to ActionBarDrawerToggle, if it returns
-        // true, then it has handled the app icon touch event
-
         if (mDrawerToggle.onOptionsItemSelected(item)) {
             return true;
         }
@@ -141,7 +155,6 @@ public class ServerStatsActivity extends AppCompatActivity implements ConnectedU
     }
 
     public void selectDrawerItem(MenuItem item){
-        // Create a new fragment and specify the fragment to show based on nav item clicked
         Fragment fragment = null;
         Class fragmentClass;
         switch(item.getItemId()) {
@@ -161,36 +174,16 @@ public class ServerStatsActivity extends AppCompatActivity implements ConnectedU
             e.printStackTrace();
         }
 
-        // Insert the fragment by replacing any existing fragment
         fragmentManager = getSupportFragmentManager();
         fragmentManager.beginTransaction().replace(R.id.fragment_container, fragment).commit();
 
-        // Highlight the selected item has been done by NavigationView
         item.setChecked(true);
-        // Set action bar title
         setTitle(item.getTitle());
-        // Close the navigation drawer
         mDrawerLayout.closeDrawers();
     }
 
     @Override
     public void onFragmentInteraction(Uri uri) {
-
+        //needs to implement this
     }
-
-    public void setUsersFragment(MenuItem item){
-        ConnectedUsersFragment usersFragment = new ConnectedUsersFragment();
-
-        // Insert the fragment by replacing any existing fragment
-        fragmentManager = getSupportFragmentManager();
-        fragmentManager.beginTransaction().replace(R.id.fragment_container, usersFragment).commit();
-
-        // Highlight the selected item has been done by NavigationView
-        item.setChecked(true);
-        // Set action bar title
-        setTitle(item.getTitle());
-        // Close the navigation drawer
-        mDrawerLayout.closeDrawers();
-    }
-
 }
