@@ -2,7 +2,6 @@ package com.example.aleksandra.encryptapplication;
 
 import android.app.AlertDialog;
 import android.content.Intent;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
@@ -35,7 +34,6 @@ public class ChooseLoginActivity extends AppCompatActivity implements View.OnCli
             return;
         }
 
-        // perform the user login attempt.
         mSocket.emit(setNickname, username,
                 Base64.encodeToString(RSA.getRSAInstance().getPublicKey().getEncoded(),
                         Base64.DEFAULT));
@@ -62,11 +60,9 @@ public class ChooseLoginActivity extends AppCompatActivity implements View.OnCli
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_choose_login);
-        getWindow().getDecorView().setBackgroundColor(Color.rgb(51, 51, 55));
         EncryptAppSocket app = (EncryptAppSocket) getApplication();
         mSocket = app.getSocket();
         nicknameField = this.findViewById(R.id.nicknameEdit);
-        nicknameField.setTextColor(Color.rgb(255, 255, 255));
         mSocket.connect();
         Button button = this.findViewById(R.id.welcomeButton);
         button.setOnClickListener(this);

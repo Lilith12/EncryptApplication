@@ -38,13 +38,11 @@ public class ServerStatsActivity extends AppCompatActivity implements ConnectedU
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         mDrawerLayout = findViewById(R.id.drawer_layout);
         nvDrawer = findViewById(R.id.nav_view);
-        // Setup drawer view
         setupDrawerTitle();
         setupDrawerContent(nvDrawer);
 
         mDrawerToggle = setupDrawerToggle(toolbar);
 
-        // Tie DrawerLayout events to the ActionBarToggle
         mDrawerLayout.addDrawerListener(mDrawerToggle);
 
         String fragmentName = getIntent().getStringExtra("fragment");
@@ -58,9 +56,6 @@ public class ServerStatsActivity extends AppCompatActivity implements ConnectedU
 
         if (findViewById(R.id.fragment_container) != null && fragmentName == null) {
 
-            // However, if we're being restored from a previous state,
-            // then we don't need to do anything and should return or else
-            // we could end up with overlapping fragments.
             if (savedInstanceState != null) {
                 return;
             }

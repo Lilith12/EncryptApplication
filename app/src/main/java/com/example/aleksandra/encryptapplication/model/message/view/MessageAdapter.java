@@ -6,6 +6,7 @@ package com.example.aleksandra.encryptapplication.model.message.view;
 
 import android.content.Context;
 import android.content.res.Resources;
+import android.graphics.Bitmap;
 import android.support.v4.content.res.ResourcesCompat;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -56,7 +57,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
     @Override
     public void onBindViewHolder(ViewHolder viewHolder, int position) {
         Message message = mMessages.get(position);
-//         viewHolder.setImage(sendMessage.getImage());
+        viewHolder.setImage(message.getImage());
         viewHolder.setMessage(message.getMessage());
         viewHolder.setUsername(message.getUsername());
         viewHolder.setEdited(message.isEdited());
@@ -97,6 +98,12 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
             int fontColor = ResourcesCompat.getColor(resources, R.color.fontColor, null);
             mMessageView.setTextColor(fontColor);
             mMessageView.setText(message);
+        }
+
+        public void setImage(Bitmap bmp){
+            if(null == mImageView) return;
+            if(null == bmp) return;
+            mImageView.setImageBitmap(bmp);
         }
 
         public void setEdited(Boolean wasEdited){

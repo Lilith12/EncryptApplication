@@ -133,6 +133,6 @@ public class WritePrivateMessageFragment extends AbstractChatFragment {
 
     @Override
     void emitMessage(String encryptedMessage, String uniqueID) {
-        mSocket.emit(getSendName(), getTarget(), encryptedMessage, wasEdited, position, uniqueID);
+        mSocket.emit(getSendName(), getTarget(), encryptedMessage, wasEdited, position, uniqueID, isImage);
     }
 }

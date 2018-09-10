@@ -219,7 +219,7 @@ public class GroupChatFragment extends AbstractChatFragment {
             if(!socket.getUsername().equals(user.getUsername())){
                 toUser = user.getUsername();
                 try {
-                    encodeWithUserPublicKey(user.getPublicKey());
+                    encodeWithUserPublicKey(user.getPublicKey(), isImage);
                 } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
                     e.printStackTrace();
                 }

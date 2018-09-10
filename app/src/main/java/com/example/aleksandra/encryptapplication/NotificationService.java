@@ -48,6 +48,7 @@ public class NotificationService extends Service {
     public IBinder onBind(Intent intent) {
         return null;
     }
+
     private Notification foregroundNotification(){
         Context ctx = NotificationService.this;
         Intent notificationIntent = new Intent(ctx, ServerStatsActivity.class);
@@ -64,6 +65,7 @@ public class NotificationService extends Service {
                 .setContentText(getString(R.string.foreground_notification_content));
         return builder.build();
     }
+
     private void addGlobalHandlers() {
         EncryptAppSocket app = (EncryptAppSocket) this.getApplication();
         mSocket = app.getSocket();
@@ -73,9 +75,7 @@ public class NotificationService extends Service {
     }
 
     private Emitter.Listener handlePrivateMessage = args -> {
-        Thread privateMessageThread = new Thread(){
-            @Override
-            public void run() {
+        Thread privateMessageThread = new Thread(() -> {
                 try {
                     MessageModel model = new MessageModel((JSONObject) args[0]);
                     TableMessagesUtils.addToDatabase(model, getDatabaseHandler(getApplicationContext()));
@@ -83,15 +83,12 @@ public class NotificationService extends Service {
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
-            }
-        };
+        });
         privateMessageThread.start();
     };
 
     private Emitter.Listener handleGroupMessage = args -> {
-        Thread handleGroupMessageThread = new Thread(){
-            @Override
-            public void run() {
+        Thread handleGroupMessageThread = new Thread(() -> {
                 try {
                     JSONObject data = (JSONObject) args[0];
                     MessageModel model = new MessageModel(data);
@@ -100,8 +97,7 @@ public class NotificationService extends Service {
                 } catch (JSONException e) {
                     return;
                 }
-            }
-        };
+            });
         handleGroupMessageThread.start();
     };
 
@@ -130,7 +126,7 @@ public class NotificationService extends Service {
                 .setVibrate(new long[]{250, 250, 250, 250})
                 .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
                 .setContentTitle(getString(R.string.message_notification, model.getUsername()))
-                .setContentText(model.decryptMessage());
+                .setContentText(model.isImage() ? "image" : model.decryptMessage());
         Notification n = builder.build();
 
         nm.notify(2, n);

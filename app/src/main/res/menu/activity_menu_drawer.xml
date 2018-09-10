@@ -1,18 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!--<group android:checkableBehavior="single" android:title="Ustawienia">-->
-    <!--<item-->
-    <!--android:id="@+id/nav_change_style"-->
-    <!--android:icon="@drawable/style_icon"-->
-    <!--android:title="Zmień wygląd" />-->
-    <!--<item-->
-    <!--android:id="@+id/nav_settings"-->
-    <!--android:icon="@drawable/settings_icon"-->
-    <!--android:title="Ustawienia" />-->
-
-    <!--</group>-->
-
     <item android:title="@string/Messages"
     android:id="@+id/messageTitleNav">
         <menu>

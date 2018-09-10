@@ -1,8 +1,16 @@
 package com.example.aleksandra.encryptapplication.fragments;
 
+import static android.app.Activity.RESULT_OK;
+
+import android.content.Intent;
+import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -12,6 +20,7 @@ import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.Base64;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -30,7 +39,6 @@ import com.example.aleksandra.encryptapplication.R;
 import com.example.aleksandra.encryptapplication.ServerStatsActivity;
 import com.example.aleksandra.encryptapplication.encrypt.RSA;
 import com.example.aleksandra.encryptapplication.handlers.DatabaseHandler;
-import com.example.aleksandra.encryptapplication.handlers.TableMessagesUtils;
 import com.example.aleksandra.encryptapplication.model.message.view.Message;
 import com.example.aleksandra.encryptapplication.model.message.view.MessageAdapter;
 import com.example.aleksandra.encryptapplication.model.message.websocket.MessageModel;
@@ -38,6 +46,8 @@ import com.example.aleksandra.encryptapplication.model.message.websocket.Message
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPublicKey;
@@ -66,6 +76,7 @@ public abstract class AbstractChatFragment extends Fragment {
     protected String sendMessage;
     protected boolean wasEdited;
     protected Integer position;
+    protected boolean isImage;
 
 
     @Override
@@ -112,9 +123,53 @@ public abstract class AbstractChatFragment extends Fragment {
                 onDisconnect();
                 return true;
 
+            case R.id.add_image:
+                openGallery();
+                return true;
+
             default:
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+    private void openGallery() {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("image/*");
+        startActivityForResult(Intent.createChooser(intent, "Select Picture"), 0);
+    }
+
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        try {
+            if (resultCode == RESULT_OK) {
+                if (requestCode == 0) {
+                    // Get the url from data
+                    Uri uri = data.getData();
+                    Bitmap bitmap = MediaStore.Images.Media.getBitmap(
+                            getContext().getContentResolver(), uri);
+                    if (bitmap != null) {
+                        sendImage(bitmap);
+                    }
+
+                }
+            }
+        } catch (Exception e) {
+            Log.e("FileSelectorActivity", "File select error", e);
+        }
+    }
+
+    private String toPath(Uri uri) {
+        String[] filePathColumn = {MediaStore.Images.Media.DATA};
+
+        Cursor cursor = getContext().getContentResolver().query(uri,
+                filePathColumn, null, null, null);
+        cursor.moveToFirst();
+
+        int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
+        String picturePath = cursor.getString(columnIndex);
+        cursor.close();
+        return picturePath;
     }
 
     @Override
@@ -225,6 +280,7 @@ public abstract class AbstractChatFragment extends Fragment {
             }
         });
 
+        isImage = false;
         sendMessageButton.setOnClickListener(v -> attemptSend(false, null));
     }
 
@@ -276,12 +332,12 @@ public abstract class AbstractChatFragment extends Fragment {
         isTyping = false;
 
         String message = messageField.getText().toString().trim();
-        if (TextUtils.isEmpty(message)) {
+        if (!isImage && TextUtils.isEmpty(message)) {
             messageView.requestFocus();
             return;
         }
 
-        this.sendMessage = message;
+        this.sendMessage = isImage ? sendMessage : message;
         this.wasEdited = wasEdited;
         this.position = position;
 
@@ -290,7 +346,7 @@ public abstract class AbstractChatFragment extends Fragment {
     }
 
     public void proceedWithMessage(@Nullable boolean wasEdited, @Nullable Integer position,
-            String encryptedMessage, String message) {
+            String encryptedMessage, String message, boolean isImage) {
         Message.Builder messageBuilder = new Message.Builder(Message.TYPE_MESSAGE)
                 .username(fromUser).message(message);
         String uniqueID;
@@ -299,15 +355,21 @@ public abstract class AbstractChatFragment extends Fragment {
             uniqueID = UUID.randomUUID().toString();
             messageBuilder.codeMessage(uniqueID);
             MessageModel model = new MessageModel(fromUser, encryptedMessage, false, position,
-                    uniqueID);
+                    uniqueID, isImage);
             setRoomName(model);
             id = db.addRow(model, getTarget());
         } else {
             uniqueID = messageList.get(position).getCodeMessage();
         }
         long finalId = id;
-        getActivity().runOnUiThread(() -> addMessage(messageBuilder.id(finalId).codeMessage(
-                uniqueID).build(), wasEdited, position));
+        getActivity().runOnUiThread(() -> {
+            if (isImage) {
+                addImage(decodeImage(message), fromUser);
+            } else {
+                addMessage(messageBuilder.id(finalId).codeMessage(uniqueID).build(), wasEdited,
+                        position);
+            }
+        });
 
         // perform the sending sendMessage attempt.
         emitMessage(encryptedMessage, uniqueID);
@@ -346,11 +408,15 @@ public abstract class AbstractChatFragment extends Fragment {
                     String senderUsername = model.getUsername();
                     setRoomName(model);
                     Message.Builder messageBuilder = new Message.Builder(
-                            Message.TYPE_MESSAGE).message(model.decryptMessage()).username(
+                            Message.TYPE_MESSAGE).username(
                             senderUsername).isEdited(wasEditedBool);
                     if (checkIfActiveConversationWindow()) {
-                        long id = TableMessagesUtils.addToDatabase(model, db);
-                        addMessage(messageBuilder.id(id).build(), wasEditedBool, positionInt);
+//                        long id = TableMessagesUtils.addToDatabase(model, db);
+                        if (model.isImage()) {
+                            addImage(decodeImageEncoded(model.getMessage()), model.getUsername());
+                        } else {
+                            addMessage(messageBuilder.message(model.decryptMessage()).build(), wasEditedBool, positionInt);
+                        }
                     }
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -379,7 +445,7 @@ public abstract class AbstractChatFragment extends Fragment {
     {
         JSONObject data = (JSONObject) args[0];
         try {
-            encodeWithUserPublicKey(data.getString("publicKey"));
+            encodeWithUserPublicKey(data.getString("publicKey"), isImage);
 
         } catch (InvalidKeySpecException | NoSuchAlgorithmException | JSONException e) {
             e.printStackTrace();
@@ -387,7 +453,7 @@ public abstract class AbstractChatFragment extends Fragment {
 
     };
 
-    protected void encodeWithUserPublicKey(String publicKeyString)
+    protected void encodeWithUserPublicKey(String publicKeyString, boolean isImage)
             throws NoSuchAlgorithmException, InvalidKeySpecException {
         byte[] publicKeyData;
         publicKeyData = Base64.decode(publicKeyString, Base64.DEFAULT);
@@ -399,7 +465,44 @@ public abstract class AbstractChatFragment extends Fragment {
         String encryptedMessage = rsa.encrypt(sendMessage,
                 publicKey.getPublicExponent(),
                 publicKey.getModulus());
-        proceedWithMessage(wasEdited, position, encryptedMessage, sendMessage);
+        proceedWithMessage(wasEdited, position, encryptedMessage, sendMessage, isImage);
+    }
+
+    public void sendImage(Bitmap bmp) {
+        try {
+            this.sendMessage = encodeImage(bmp);
+//            Bitmap bmp = decodeImage(sendMessage);
+//            addImage(bmp, fromUser);
+            this.isImage = true;
+            attemptSend(false, null);
+        } catch (IOException e) {
+
+        }
+    }
+
+    private void addImage(Bitmap bmp, String username) {
+        messageList.add(new Message.Builder(Message.TYPE_MESSAGE)
+                .image(bmp).username(username).build());
+        adapter = new MessageAdapter(this.getContext(), messageList);
+        adapter.notifyItemInserted(0);
+        scrollToBottom();
+    }
+
+    private String encodeImage(Bitmap bm) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        bm.compress(Bitmap.CompressFormat.JPEG, 10, baos);
+        byte[] b = baos.toByteArray();
+        return Base64.encodeToString(b, Base64.NO_WRAP);
+    }
+
+    private Bitmap decodeImageEncoded(String data) {
+        byte[] bytes = RSA.getRSAInstance().decrypt(data).getBytes();
+        byte[] b = Base64.decode(bytes, Base64.NO_WRAP);
+        return BitmapFactory.decodeByteArray(b, 0, b.length);
+    }
+        private Bitmap decodeImage(String data) {
+        byte[] b = Base64.decode(data, Base64.NO_WRAP);
+        return BitmapFactory.decodeByteArray(b, 0, b.length);
     }
 
     abstract void getDataAndAddTyping(JSONObject data) throws JSONException;

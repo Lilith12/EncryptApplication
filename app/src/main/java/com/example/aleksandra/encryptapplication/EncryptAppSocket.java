@@ -2,9 +2,6 @@ package com.example.aleksandra.encryptapplication;
 
 import android.app.Application;
 
-import java.net.URISyntaxException;
-
-import io.socket.client.IO;
 import io.socket.client.Socket;
 
 /**
@@ -12,25 +9,14 @@ import io.socket.client.Socket;
  */
 public class EncryptAppSocket extends Application {
 
-    private static final String hostname = "http://ec2-18-130-182-33.eu-west-2.compute.amazonaws.com:8085";
-    private static final String localhostHostname = "http://192.168.1.11:8085"; //netstat -r 0.0.0.0
-
     private String username;
-    private Socket mSocket;
 
     public EncryptAppSocket(){
         // Class with application needs public constructor
     }
 
     public Socket getSocket() {
-        if (mSocket == null) {
-            try {
-                mSocket = IO.socket(localhostHostname);
-            } catch (URISyntaxException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        return mSocket;
+        return SocketConnect.getSocket();
     }
 
     public String getUsername() {
