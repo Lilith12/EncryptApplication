@@ -31,7 +31,6 @@ public class WritePrivateMessageFragment extends AbstractChatFragment {
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-//        adapter = new MessageAdapter(getActivity(), messageList);
         if (context instanceof OnFragmentInteractionListener) {
             mListener = (OnFragmentInteractionListener) context;
         } else {

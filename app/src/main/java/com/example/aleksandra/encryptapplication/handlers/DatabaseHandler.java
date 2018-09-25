@@ -15,6 +15,8 @@ import com.example.aleksandra.encryptapplication.model.message.websocket.Message
 import java.util.ArrayList;
 import java.util.List;
 
+import lombok.SneakyThrows;
+
 /**
  * Created by Aleksandra on 2018-01-15.
  */
@@ -77,6 +79,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
         return id;
     }
 
+    @SneakyThrows
     public List<Message> getMessagesFromConversation(String conversationCode) {
         List<Message> messageList = new ArrayList<>();
 
@@ -91,7 +94,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
         String username;
         String messageString;
         boolean isImage;
-        Message message;
+        Message message = null;
         if (cursor.moveToFirst()) {
             while (!cursor.isAfterLast()) {
                 id = Integer.parseInt(cursor.getString(0));
@@ -101,7 +104,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
                 Message.Builder messageBuilder = new Message.Builder(Message.TYPE_MESSAGE).id(id)
                         .username(username);
                 if (isImage) {
-                    byte[] decode = Base64.decode(decryptMessage(messageString), Base64.DEFAULT);
+                    byte[] decode = Base64.decode(messageString, Base64.DEFAULT);
                     messageBuilder.image(BitmapFactory.decodeByteArray(decode, 0, decode.length));
                 } else {
                     messageBuilder.message(decryptMessage(messageString));

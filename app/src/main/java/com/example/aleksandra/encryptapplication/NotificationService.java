@@ -92,8 +92,9 @@ public class NotificationService extends Service {
                 try {
                     JSONObject data = (JSONObject) args[0];
                     MessageModel model = new MessageModel(data);
+                    model.setRoomName(data.getString("roomName"));
                     TableMessagesUtils.addToDatabase(model, getDatabaseHandler(getApplicationContext()));
-                    createNotification(model, "GroupChatFragment", data.getString("roomName"));
+                    createNotification(model, "GroupChatFragment", model.getRoomName());
                 } catch (JSONException e) {
                     return;
                 }

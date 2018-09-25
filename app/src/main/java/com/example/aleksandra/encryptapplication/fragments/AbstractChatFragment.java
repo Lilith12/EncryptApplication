@@ -3,7 +3,6 @@ package com.example.aleksandra.encryptapplication.fragments;
 import static android.app.Activity.RESULT_OK;
 
 import android.content.Intent;
-import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -47,7 +46,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPublicKey;
@@ -73,7 +71,7 @@ public abstract class AbstractChatFragment extends Fragment {
     protected DatabaseHandler db;
     private boolean isInBackground;
     protected boolean isGroupMessage;
-    protected String sendMessage;
+    protected String sendMessage = null;
     protected boolean wasEdited;
     protected Integer position;
     protected boolean isImage;
@@ -112,6 +110,7 @@ public abstract class AbstractChatFragment extends Fragment {
         if (!getActivity().isChangingConfigurations()) {
             isInBackground = true;
         }
+        removeHandlers();
     }
 
     @Override
@@ -151,25 +150,11 @@ public abstract class AbstractChatFragment extends Fragment {
                     if (bitmap != null) {
                         sendImage(bitmap);
                     }
-
                 }
             }
         } catch (Exception e) {
             Log.e("FileSelectorActivity", "File select error", e);
         }
-    }
-
-    private String toPath(Uri uri) {
-        String[] filePathColumn = {MediaStore.Images.Media.DATA};
-
-        Cursor cursor = getContext().getContentResolver().query(uri,
-                filePathColumn, null, null, null);
-        cursor.moveToFirst();
-
-        int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
-        String picturePath = cursor.getString(columnIndex);
-        cursor.close();
-        return picturePath;
     }
 
     @Override
@@ -236,7 +221,10 @@ public abstract class AbstractChatFragment extends Fragment {
                     messageField.setOnEditorActionListener(
                             getEnterListener(edited, positionOnList));
                     Button sendMessageButton = getActivity().findViewById(R.id.sendButton);
-                    sendMessageButton.setOnClickListener(v1 -> attemptSend(edited, positionOnList));
+                    sendMessageButton.setOnClickListener(v1 -> {
+                        isImage = false;
+                        attemptSend(edited, positionOnList);
+                    });
                 }
             }
         }));
@@ -280,8 +268,10 @@ public abstract class AbstractChatFragment extends Fragment {
             }
         });
 
-        isImage = false;
-        sendMessageButton.setOnClickListener(v -> attemptSend(false, null));
+        sendMessageButton.setOnClickListener(v -> {
+            isImage = false;
+            attemptSend(false, null);
+        });
     }
 
     @NonNull
@@ -337,7 +327,7 @@ public abstract class AbstractChatFragment extends Fragment {
             return;
         }
 
-        this.sendMessage = isImage ? sendMessage : message;
+        sendMessage = isImage ? sendMessage : message;
         this.wasEdited = wasEdited;
         this.position = position;
 
@@ -346,9 +336,9 @@ public abstract class AbstractChatFragment extends Fragment {
     }
 
     public void proceedWithMessage(@Nullable boolean wasEdited, @Nullable Integer position,
-            String encryptedMessage, String message, boolean isImage) {
+            String encryptedMessage) {
         Message.Builder messageBuilder = new Message.Builder(Message.TYPE_MESSAGE)
-                .username(fromUser).message(message);
+                .username(fromUser).message(sendMessage);
         String uniqueID;
         long id = -1;
         if (!wasEdited) {
@@ -364,7 +354,7 @@ public abstract class AbstractChatFragment extends Fragment {
         long finalId = id;
         getActivity().runOnUiThread(() -> {
             if (isImage) {
-                addImage(decodeImage(message), fromUser);
+                addImage(decodeImage(encryptedMessage), fromUser);
             } else {
                 addMessage(messageBuilder.id(finalId).codeMessage(uniqueID).build(), wasEdited,
                         position);
@@ -411,11 +401,11 @@ public abstract class AbstractChatFragment extends Fragment {
                             Message.TYPE_MESSAGE).username(
                             senderUsername).isEdited(wasEditedBool);
                     if (checkIfActiveConversationWindow()) {
-//                        long id = TableMessagesUtils.addToDatabase(model, db);
                         if (model.isImage()) {
-                            addImage(decodeImageEncoded(model.getMessage()), model.getUsername());
+                            addImage(decodeImage(model.getMessage()), model.getUsername());
                         } else {
-                            addMessage(messageBuilder.message(model.decryptMessage()).build(), wasEditedBool, positionInt);
+                            addMessage(messageBuilder.message(model.decryptMessage()).build(),
+                                    wasEditedBool, positionInt);
                         }
                     }
                 } catch (JSONException e) {
@@ -445,7 +435,7 @@ public abstract class AbstractChatFragment extends Fragment {
     {
         JSONObject data = (JSONObject) args[0];
         try {
-            encodeWithUserPublicKey(data.getString("publicKey"), isImage);
+            encodeWithUserPublicKey(data.getString("publicKey"));
 
         } catch (InvalidKeySpecException | NoSuchAlgorithmException | JSONException e) {
             e.printStackTrace();
@@ -453,7 +443,7 @@ public abstract class AbstractChatFragment extends Fragment {
 
     };
 
-    protected void encodeWithUserPublicKey(String publicKeyString, boolean isImage)
+    protected void encodeWithUserPublicKey(String publicKeyString)
             throws NoSuchAlgorithmException, InvalidKeySpecException {
         byte[] publicKeyData;
         publicKeyData = Base64.decode(publicKeyString, Base64.DEFAULT);
@@ -465,42 +455,32 @@ public abstract class AbstractChatFragment extends Fragment {
         String encryptedMessage = rsa.encrypt(sendMessage,
                 publicKey.getPublicExponent(),
                 publicKey.getModulus());
-        proceedWithMessage(wasEdited, position, encryptedMessage, sendMessage, isImage);
+        proceedWithMessage(wasEdited, position, encryptedMessage);
     }
 
     public void sendImage(Bitmap bmp) {
-        try {
-            this.sendMessage = encodeImage(bmp);
-//            Bitmap bmp = decodeImage(sendMessage);
-//            addImage(bmp, fromUser);
-            this.isImage = true;
-            attemptSend(false, null);
-        } catch (IOException e) {
-
-        }
+        registerSockets();
+        this.sendMessage = encodeImage(bmp);
+        this.isImage = true;
+        attemptSend(false, null);
     }
 
     private void addImage(Bitmap bmp, String username) {
         messageList.add(new Message.Builder(Message.TYPE_MESSAGE)
                 .image(bmp).username(username).build());
         adapter = new MessageAdapter(this.getContext(), messageList);
-        adapter.notifyItemInserted(0);
+        adapter.notifyItemInserted(messageList.size() - 1);
         scrollToBottom();
     }
 
-    private String encodeImage(Bitmap bm) throws IOException {
+    private String encodeImage(Bitmap bm) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         bm.compress(Bitmap.CompressFormat.JPEG, 10, baos);
         byte[] b = baos.toByteArray();
         return Base64.encodeToString(b, Base64.NO_WRAP);
     }
 
-    private Bitmap decodeImageEncoded(String data) {
-        byte[] bytes = RSA.getRSAInstance().decrypt(data).getBytes();
-        byte[] b = Base64.decode(bytes, Base64.NO_WRAP);
-        return BitmapFactory.decodeByteArray(b, 0, b.length);
-    }
-        private Bitmap decodeImage(String data) {
+    private Bitmap decodeImage(String data) {
         byte[] b = Base64.decode(data, Base64.NO_WRAP);
         return BitmapFactory.decodeByteArray(b, 0, b.length);
     }

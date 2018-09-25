@@ -14,7 +14,7 @@ public class RSA {
     private BigInteger N;
     private BigInteger e;
     private BigInteger d;
-    private int bitlen = 1024;
+    private int bitlen = 2048;
     private PublicKey publicKey;
     private static RSA rsa;
 
@@ -40,20 +40,17 @@ public class RSA {
         d = e.modInverse(m);
     }
 
+    @SneakyThrows
     public synchronized String encrypt(String message, BigInteger exponent, BigInteger modulus) {
-        return (new BigInteger(message.getBytes())).modPow(exponent, modulus).toString();
-    }
-
-    public synchronized BigInteger encrypt(BigInteger message) {
-        return message.modPow(e, N);
+        if (message.getBytes("UTF-8").length < 245) {
+            return (new BigInteger(message.getBytes())).modPow(exponent, modulus).toString();
+        } else {
+            return message;
+        }
     }
 
     public synchronized String decrypt(String message) {
-        return new String((new BigInteger(message)).modPow(d, N).toByteArray());
-    }
-
-    public synchronized BigInteger decrypt(BigInteger message) {
-        return message.modPow(d, N);
+        return new String(new BigInteger(message).modPow(d, N).toByteArray());
     }
 
     public synchronized BigInteger getN() {

@@ -10,7 +10,6 @@ import android.widget.Toast;
 
 import com.example.aleksandra.encryptapplication.EncryptAppSocket;
 import com.example.aleksandra.encryptapplication.R;
-import com.example.aleksandra.encryptapplication.model.message.view.MessageAdapter;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -71,7 +70,6 @@ public class GroupChatFragment extends AbstractChatFragment {
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-//        adapter = new MessageAdapter(getActivity(), messageList);
         if (context instanceof OnFragmentInteractionListener) {
             mListener = (OnFragmentInteractionListener) context;
         } else {
@@ -151,7 +149,7 @@ public class GroupChatFragment extends AbstractChatFragment {
 
     @Override
     String getSendName() {
-        return "new group sendMessage";
+        return "new group message";
     }
 
     @Override
@@ -196,7 +194,7 @@ public class GroupChatFragment extends AbstractChatFragment {
 
     @Override
     void emitMessage(String encryptedMessage, String uniqueID) {
-        mSocket.emit(getSendName(), toUser, getTarget(), encryptedMessage, wasEdited, position, uniqueID);
+        mSocket.emit(getSendName(), toUser, getTarget(), encryptedMessage, wasEdited, position, uniqueID, isImage);
     }
 
     // it overrides parent listener
@@ -219,7 +217,7 @@ public class GroupChatFragment extends AbstractChatFragment {
             if(!socket.getUsername().equals(user.getUsername())){
                 toUser = user.getUsername();
                 try {
-                    encodeWithUserPublicKey(user.getPublicKey(), isImage);
+                    encodeWithUserPublicKey(user.getPublicKey());
                 } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
                     e.printStackTrace();
                 }

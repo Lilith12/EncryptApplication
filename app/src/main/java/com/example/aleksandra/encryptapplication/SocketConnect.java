@@ -24,8 +24,6 @@ import okio.Buffer;
 
 public class SocketConnect {
     private static final String hostname = "https://encrypt-app.tk:8085";
-    private static final String localhostHostname = "http://192.168.1.5:8085";
-    //netstat -r 0.0.0.0
 
     private static Socket mSocket;
 
@@ -37,7 +35,6 @@ public class SocketConnect {
         if (mSocket == null) {
             try {
                 createSSLConnection();
-//                createLocalConnection();
             } catch (URISyntaxException e) {
                 e.printStackTrace();
             }
@@ -65,10 +62,6 @@ public class SocketConnect {
         opts.callFactory = okHttpClient;
         opts.webSocketFactory = okHttpClient;
         mSocket = IO.socket(hostname, opts);
-    }
-
-    private static void createLocalConnection() throws URISyntaxException {
-        mSocket = IO.socket(localhostHostname);
     }
 
     private static X509TrustManager trustManagerForCertificates(InputStream in)
@@ -117,11 +110,7 @@ public class SocketConnect {
 
 
     private static InputStream trustedCertificatesInputStream() {
-        // PEM files for root certificates of Comodo and Entrust. These two CAs are sufficient to view
-        // https://publicobject.com (Comodo) and https://squareup.com (Entrust). But they aren't
-        // sufficient to connect to most HTTPS sites including https://godaddy.com and https://visa.com.
-        // Typically developers will need to get a PEM file from their organization's TLS administrator.
-        String comodoRsaCertificationAuthority = ""
+        String rsaCertificationAuthority = ""
                 + "-----BEGIN CERTIFICATE-----\n"
                 + "MIIGHTCCBQWgAwIBAgISA+M66TGl2ATht1TlWN/TpnTWMA0GCSqGSIb3DQEBCwUA\n"
                 + "MEoxCzAJBgNVBAYTAlVTMRYwFAYDVQQKEw1MZXQncyBFbmNyeXB0MSMwIQYDVQQD\n"
@@ -186,7 +175,7 @@ public class SocketConnect {
                 + "KOqkqm57TH2H3eDJAkSnh6/DNFu0Qg==\n"
                 + "-----END CERTIFICATE-----\n";
         return new Buffer()
-                .writeUtf8(comodoRsaCertificationAuthority)
+                .writeUtf8(rsaCertificationAuthority)
                 .writeUtf8(entrustRootCertificateAuthority)
                 .inputStream();
     }

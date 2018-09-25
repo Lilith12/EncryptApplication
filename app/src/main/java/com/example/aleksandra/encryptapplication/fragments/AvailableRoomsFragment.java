@@ -192,10 +192,11 @@ public class AvailableRoomsFragment extends Fragment {
     Runnable run = new Runnable() {
         @Override
         public void run() {
-            //Do something after 20 seconds
-            mSocket.emit("get rooms");
-            ((BaseAdapter) rooms.getAdapter()).notifyDataSetChanged();
-            handler.postDelayed(this, 5000);
+            getActivity().runOnUiThread(() -> {
+                mSocket.emit("get rooms");
+                ((BaseAdapter) rooms.getAdapter()).notifyDataSetChanged();
+                handler.postDelayed(this, 5000);
+            });
         }
     };
 
